@@ -11,8 +11,10 @@ import {
   createBayerThresholds,
 } from "@/features/dither-image/utils/bayer";
 import {
+  FIGMA_RENDER_SCALE,
   figmaLuma,
   quantizeChannel,
+  SUBSAMPLES_AT_1X,
 } from "@/features/dither-image/utils/color";
 import { containerToImageUv } from "@/features/dither-image/utils/frame";
 import { hash2d } from "@/features/dither-image/utils/hash";
@@ -72,17 +74,24 @@ export function DitherFallback({
       const dpr = Math.min(window.devicePixelRatio, MAX_DPR);
       const canvasWidth = Math.round(width * dpr);
       const canvasHeight = Math.round(height * dpr);
-      const cell = Math.max(1, pixelSize * dpr);
-      const columns = Math.ceil(canvasWidth / cell);
-      const rows = Math.ceil(canvasHeight / cell);
-      const output = new ImageData(columns, rows);
+      const rawCell = (pixelSize * dpr) / FIGMA_RENDER_SCALE;
+      const cell = rawCell >= 1 ? Math.round(rawCell) : rawCell;
+      const subsamples =
+        quantize === "ordered"
+          ? Math.max(1, Math.round(SUBSAMPLES_AT_1X / dpr))
+          : 1;
+      const output = new ImageData(canvasWidth, canvasHeight);
       const alpha = Math.round(opacity * 255);
+      const sampleCell = Math.max(cell, 1);
 
-      for (let row = 0; row < rows; row++) {
-        for (let column = 0; column < columns; column++) {
+      for (let y = 0; y < canvasHeight; y++) {
+        for (let x = 0; x < canvasWidth; x++) {
+          // Same as the shader: gradient map once per pixel (or coarse cell).
+          const cellX = Math.floor(x / sampleCell);
+          const cellY = Math.floor(y / sampleCell);
           const [u, v] = containerToImageUv(
-            ((column + 0.5) * cell) / canvasWidth,
-            ((row + 0.5) * cell) / canvasHeight,
+            ((cellX + 0.5) * sampleCell) / canvasWidth,
+            ((cellY + 0.5) * sampleCell) / canvasHeight,
             frame,
             canvasWidth,
             canvasHeight,
@@ -105,27 +114,42 @@ export function DitherFallback({
           );
           const t = Math.min(
             1,
-            Math.max(0, luma + (hash2d(column, row) - 0.5) * scatter - offset),
+            Math.max(0, luma + (hash2d(cellX, cellY) - 0.5) * scatter - offset),
           );
-          const threshold =
-            thresholds[(row % BAYER_SIZE) * BAYER_SIZE + (column % BAYER_SIZE)];
-          const out = (row * columns + column) * 4;
-          gradientMap(resolved, t).forEach((channel, offsetIndex) => {
-            output.data[out + offsetIndex] =
-              quantizeChannel(channel, quantize, levels, threshold) * 255;
-          });
+          const mapped = gradientMap(resolved, t);
+          const sum = [0, 0, 0];
+
+          for (let j = 0; j < subsamples; j++) {
+            for (let i = 0; i < subsamples; i++) {
+              const subX = Math.floor((x + (i + 0.5) / subsamples) / cell);
+              const subY = Math.floor((y + (j + 0.5) / subsamples) / cell);
+              const threshold =
+                thresholds[
+                  (subY % BAYER_SIZE) * BAYER_SIZE + (subX % BAYER_SIZE)
+                ];
+              for (let channel = 0; channel < 3; channel++) {
+                sum[channel] += quantizeChannel(
+                  mapped[channel],
+                  quantize,
+                  levels,
+                  threshold,
+                );
+              }
+            }
+          }
+
+          const out = (y * canvasWidth + x) * 4;
+          const count = subsamples * subsamples;
+          output.data[out] = (sum[0] / count) * 255;
+          output.data[out + 1] = (sum[1] / count) * 255;
+          output.data[out + 2] = (sum[2] / count) * 255;
           output.data[out + 3] = alpha;
         }
       }
 
-      const cells = document.createElement("canvas");
-      cells.width = columns;
-      cells.height = rows;
-      cells.getContext("2d")?.putImageData(output, 0, 0);
       canvas.width = canvasWidth;
       canvas.height = canvasHeight;
-      context.imageSmoothingEnabled = false;
-      context.drawImage(cells, 0, 0, columns * cell, rows * cell);
+      context.putImageData(output, 0, 0);
     };
 
     const scheduleDraw = () => {

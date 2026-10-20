@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
-import { DITHER_FRAGMENT_SHADER } from "@/features/dither-image/shaders/dither-fragment";
+import { DITHER_BAKE_FRAGMENT_SHADER } from "@/features/dither-image/shaders/dither-bake-fragment";
+import { DITHER_PRESENT_FRAGMENT_SHADER } from "@/features/dither-image/shaders/dither-present-fragment";
 import { DITHER_VERTEX_SHADER } from "@/features/dither-image/shaders/dither-vertex";
 import type {
   DitherFrame,
@@ -13,6 +14,10 @@ import {
   BAYER_SIZE,
   createBayerThresholds,
 } from "@/features/dither-image/utils/bayer";
+import {
+  FIGMA_RENDER_SCALE,
+  SUBSAMPLES_AT_1X,
+} from "@/features/dither-image/utils/color";
 import {
   MAX_PALETTE_STOPS,
   resolvePalette,
@@ -25,35 +30,27 @@ const QUANTIZE_MODE: Record<DitherQuantize, number> = {
   ordered: 1,
   posterize: 2,
 };
-/** Constant motion: flow-field distortion and tonal wave amplitudes. */
-const MOTION = { flow: 0.014, wave: 0.1 };
+/**
+ * Motion with the effect's own pixels, per tick: share of pixels showing
+ * another baked variant, pixels and blocks trading places, block size (CSS px).
+ */
+const MOTION = { boil: 0.15, swap: 0.035, blockSwap: 0.03, block: 3 };
+/** Bayer phase (in cells) of each baked variant; variant 0 is the Figma one. */
+const VARIANT_PHASES = [
+  [0, 0],
+  [7, 3],
+  [3, 11],
+] as const;
+/** Random motion re-rolls this many times per second. */
+const TICKS_PER_SECOND = 12;
 
+/** Uniforms driven by GSAP (entry, scroll, cursor). */
 export type DitherUniforms = {
-  uImage: THREE.IUniform<THREE.Texture | null>;
-  uBayer: THREE.IUniform<THREE.DataTexture>;
-  uResolution: THREE.IUniform<THREE.Vector2>;
-  uImageSize: THREE.IUniform<THREE.Vector2>;
-  uFrame: THREE.IUniform<THREE.Vector4>;
-  uColors: THREE.IUniform<THREE.Vector3[]>;
-  uStops: THREE.IUniform<number[]>;
-  uStopCount: THREE.IUniform<number>;
-  uPixelSize: THREE.IUniform<number>;
-  uOpacity: THREE.IUniform<number>;
-  uOffset: THREE.IUniform<number>;
-  uScatter: THREE.IUniform<number>;
-  uQuantize: THREE.IUniform<number>;
-  uLevels: THREE.IUniform<number>;
-  uTime: THREE.IUniform<number>;
-  uFlow: THREE.IUniform<number>;
-  uWave: THREE.IUniform<number>;
-  uLive: THREE.IUniform<number>;
   uReveal: THREE.IUniform<number>;
   uEntryCoarse: THREE.IUniform<number>;
   uScrollCoarse: THREE.IUniform<number>;
-  uDensity: THREE.IUniform<number>;
   uMouse: THREE.IUniform<THREE.Vector2>;
   uMouseStrength: THREE.IUniform<number>;
-  uMouseRadius: THREE.IUniform<number>;
 };
 
 type DitherSceneOptions = {
@@ -66,7 +63,7 @@ type DitherSceneOptions = {
   quantize: DitherQuantize;
   levels: number;
   frame: DitherFrame;
-  /** Render every frame while visible (animated) or only on demand. */
+  /** Keep the image moving while visible, or render it once. */
   continuous: boolean;
 };
 
@@ -86,9 +83,19 @@ function createBayerTexture() {
   return texture;
 }
 
+function createBakeTarget() {
+  return new THREE.WebGLRenderTarget(1, 1, {
+    minFilter: THREE.NearestFilter,
+    magFilter: THREE.NearestFilter,
+    depthBuffer: false,
+    generateMipmaps: false,
+  });
+}
+
 /**
- * Owns the Three.js renderer for one dither image: texture loading, resize,
- * DPR cap, render loop paused off-screen, and full disposal on unmount.
+ * Owns the Three.js renderer for one dither image. The Figma look is baked
+ * once per size (bake pass); every frame a light pass animates it. Handles
+ * texture loading, resize, DPR cap, pausing off-screen and full disposal.
  * A fresh canvas is created per mount, so a lost context is never reused.
  */
 export function useDitherScene(
@@ -132,67 +139,119 @@ export function useDitherScene(
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_DPR));
     renderer.setClearColor(0x000000, 0);
 
-    const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const geometry = new THREE.PlaneGeometry(2, 2);
     const bayerTexture = createBayerTexture();
     const resolved = resolvePalette(palette);
-    const colors = Array.from(
-      { length: MAX_PALETTE_STOPS },
-      (_, i) => new THREE.Vector3(...(resolved.colors[i] ?? [0, 0, 0])),
-    );
-    const stops = Array.from(
-      { length: MAX_PALETTE_STOPS },
-      (_, i) => resolved.positions[i] ?? 1,
-    );
+    const toVector = (rgb: readonly number[] | undefined) =>
+      new THREE.Vector3(...(rgb ?? [0, 0, 0]));
+    const resolution = new THREE.Vector2(1, 1);
+    const bakeTargets = VARIANT_PHASES.map(() => createBakeTarget());
 
-    const uniforms: DitherUniforms = {
-      uImage: { value: null },
-      uBayer: { value: bayerTexture },
-      uResolution: { value: new THREE.Vector2(1, 1) },
-      uImageSize: { value: new THREE.Vector2(1, 1) },
-      uFrame: {
-        value: new THREE.Vector4(frame.x, frame.y, frame.width, frame.height),
+    const bakeMaterial = new THREE.ShaderMaterial({
+      vertexShader: DITHER_VERTEX_SHADER,
+      fragmentShader: DITHER_BAKE_FRAGMENT_SHADER,
+      uniforms: {
+        uImage: { value: null },
+        uBayer: { value: bayerTexture },
+        uResolution: { value: resolution },
+        uImageSize: { value: new THREE.Vector2(1, 1) },
+        uFrame: {
+          value: new THREE.Vector4(frame.x, frame.y, frame.width, frame.height),
+        },
+        uColors: {
+          value: Array.from({ length: MAX_PALETTE_STOPS }, (_, i) =>
+            toVector(resolved.colors[i]),
+          ),
+        },
+        uStops: {
+          value: Array.from(
+            { length: MAX_PALETTE_STOPS },
+            (_, i) => resolved.positions[i] ?? 1,
+          ),
+        },
+        uStopCount: { value: resolved.colors.length },
+        uPixelSize: { value: pixelSize / FIGMA_RENDER_SCALE },
+        uSubsamples: { value: SUBSAMPLES_AT_1X },
+        uOffset: { value: offset },
+        uScatter: { value: scatter },
+        uSeed: { value: 0 },
+        uPhase: { value: new THREE.Vector2() },
+        uQuantize: { value: QUANTIZE_MODE[quantize] },
+        uLevels: { value: levels },
       },
-      uColors: { value: colors },
-      uStops: { value: stops },
-      uStopCount: { value: resolved.colors.length },
-      uPixelSize: { value: pixelSize },
-      uOpacity: { value: opacity },
-      uOffset: { value: offset },
-      uScatter: { value: scatter },
-      uQuantize: { value: QUANTIZE_MODE[quantize] },
-      uLevels: { value: levels },
-      uTime: { value: 0 },
-      uFlow: { value: continuous ? MOTION.flow : 0 },
-      uWave: { value: continuous ? MOTION.wave : 0 },
-      uLive: { value: continuous ? 1 : 0 },
+      depthTest: false,
+      depthWrite: false,
+    });
+
+    const animated: DitherUniforms = {
       uReveal: { value: continuous ? 0 : 1 },
       uEntryCoarse: { value: 1 },
       uScrollCoarse: { value: 1 },
-      uDensity: { value: 0 },
       uMouse: { value: new THREE.Vector2(0.5, 0.5) },
       uMouseStrength: { value: 0 },
-      uMouseRadius: { value: 0.22 },
     };
-
-    const material = new THREE.ShaderMaterial({
+    const presentMaterial = new THREE.ShaderMaterial({
       vertexShader: DITHER_VERTEX_SHADER,
-      fragmentShader: DITHER_FRAGMENT_SHADER,
-      uniforms,
+      fragmentShader: DITHER_PRESENT_FRAGMENT_SHADER,
+      uniforms: {
+        ...animated,
+        uBake0: { value: bakeTargets[0].texture },
+        uBake1: { value: bakeTargets[1].texture },
+        uBake2: { value: bakeTargets[2].texture },
+        uBayer: { value: bayerTexture },
+        uResolution: { value: resolution },
+        uOpacity: { value: opacity },
+        uTime: { value: 0 },
+        uLive: { value: continuous ? 1 : 0 },
+        uBoil: { value: MOTION.boil },
+        uSwap: { value: MOTION.swap },
+        uBlockSwap: { value: MOTION.blockSwap },
+        uBlock: { value: MOTION.block },
+        uMouseRadius: { value: 0.22 },
+      },
       blending: THREE.NoBlending,
       depthTest: false,
       depthWrite: false,
     });
-    scene.add(new THREE.Mesh(geometry, material));
 
-    const render = () => {
-      if (loaded) renderer.render(scene, camera);
+    const bakeScene = new THREE.Scene();
+    bakeScene.add(new THREE.Mesh(geometry, bakeMaterial));
+    const presentScene = new THREE.Scene();
+    presentScene.add(new THREE.Mesh(geometry, presentMaterial));
+
+    const bake = () => {
+      bakeTargets.forEach((target, index) => {
+        bakeMaterial.uniforms.uSeed.value = index;
+        bakeMaterial.uniforms.uPhase.value.set(...VARIANT_PHASES[index]);
+        renderer.setRenderTarget(target);
+        renderer.render(bakeScene, camera);
+      });
+      renderer.setRenderTarget(null);
     };
 
+    const present = () => {
+      if (loaded) renderer.render(presentScene, camera);
+    };
+
+    // Re-render only when the random motion re-rolls or a GSAP uniform moved.
+    let lastTick = -1;
+    let lastState = "";
     const tick = (_time: number, deltaTime: number) => {
-      uniforms.uTime.value += deltaTime / 1000;
-      render();
+      const time = (presentMaterial.uniforms.uTime.value += deltaTime / 1000);
+      const motionTick = Math.floor(time * TICKS_PER_SECOND);
+      const state = [
+        animated.uReveal.value,
+        animated.uEntryCoarse.value,
+        animated.uScrollCoarse.value,
+        animated.uMouse.value.x,
+        animated.uMouse.value.y,
+        animated.uMouseStrength.value,
+      ].join();
+      if (motionTick === lastTick && state === lastState) return;
+      lastTick = motionTick;
+      lastState = state;
+      present();
     };
 
     const updateLoop = () => {
@@ -206,9 +265,23 @@ export function useDitherScene(
       if (!width || !height) return;
       renderer.setSize(width, height, false);
       renderer.getDrawingBufferSize(drawingBuffer);
-      uniforms.uResolution.value.copy(drawingBuffer);
-      uniforms.uPixelSize.value = pixelSize * renderer.getPixelRatio();
-      render();
+      resolution.copy(drawingBuffer);
+      bakeTargets.forEach((target) =>
+        target.setSize(drawingBuffer.x, drawingBuffer.y),
+      );
+
+      const pixelRatio = renderer.getPixelRatio();
+      bakeMaterial.uniforms.uPixelSize.value =
+        (pixelSize * pixelRatio) / FIGMA_RENDER_SCALE;
+      bakeMaterial.uniforms.uSubsamples.value = Math.max(
+        1,
+        Math.round(SUBSAMPLES_AT_1X / pixelRatio),
+      );
+      presentMaterial.uniforms.uBlock.value = MOTION.block * pixelRatio;
+      if (loaded) {
+        bake();
+        present();
+      }
     };
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(container);
@@ -227,7 +300,7 @@ export function useDitherScene(
           texture.dispose();
           return;
         }
-        // Raw values: the shader converts them like Figma does.
+        // Raw values: the bake shader converts them like Figma does.
         texture.colorSpace = THREE.NoColorSpace;
         // UVs use a top-left origin, like the CSS layout.
         texture.flipY = false;
@@ -235,13 +308,14 @@ export function useDitherScene(
         texture.magFilter = THREE.LinearFilter;
         texture.generateMipmaps = false;
         const image = texture.image as { width: number; height: number };
-        uniforms.uImage.value = texture;
-        uniforms.uImageSize.value.set(image.width, image.height);
+        bakeMaterial.uniforms.uImage.value = texture;
+        bakeMaterial.uniforms.uImageSize.value.set(image.width, image.height);
         imageTexture = texture;
         loaded = true;
-        uniformsRef.current = uniforms;
+        uniformsRef.current = animated;
+        bake();
+        present();
         updateLoop();
-        render();
         setReady(true);
       })
       .catch(() => {
@@ -255,7 +329,9 @@ export function useDitherScene(
       intersectionObserver.disconnect();
       uniformsRef.current = null;
       geometry.dispose();
-      material.dispose();
+      bakeMaterial.dispose();
+      presentMaterial.dispose();
+      bakeTargets.forEach((target) => target.dispose());
       bayerTexture.dispose();
       imageTexture?.dispose();
       renderer.dispose();
