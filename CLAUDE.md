@@ -65,6 +65,7 @@ Estas regras valem para todas as sessões. Siga-as sem exceção.
 - `feature/<nome-da-feature>`: uma branch nova por feature, sempre a partir da `develop`.
 
 Fluxo de cada feature:
+
 1. Atualizar a `develop`.
 2. Criar `feature/<nome>` a partir dela.
 3. Implementar só aquela feature, com commits pequenos e frequentes.
@@ -112,6 +113,7 @@ Mensagens: **Conventional Commits** (`feat:`, `fix:`, `chore:`, `refactor:`, `do
 ```
 
 Convenções:
+
 - Arquivos e pastas em `kebab-case`. Componentes em `PascalCase`, um por arquivo.
 - Hooks com prefixo `use`. Constantes em `UPPER_SNAKE_CASE`. Alias `@/` → `src/`.
 - `app/` contém só rotas e composição. Lógica em `features/`, `components/` e `hooks/`.
