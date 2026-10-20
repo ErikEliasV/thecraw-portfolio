@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { SITE_CONFIG } from "@/constants/site";
 import { seagram, sfPro } from "@/lib/fonts";
+import { SmoothScrollProvider } from "@/lib/smooth-scroll-provider";
+import "lenis/dist/lenis.css";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +20,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${sfPro.variable} ${seagram.variable}`}
     >
       <body className="overflow-x-clip bg-white-graw font-sans text-black-graw antialiased">
-        {children}
+        <SmoothScrollProvider>{children}</SmoothScrollProvider>
       </body>
     </html>
   );
