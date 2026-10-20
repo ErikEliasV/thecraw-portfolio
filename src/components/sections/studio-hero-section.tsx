@@ -9,6 +9,7 @@ import { STUDIO_DITHER } from "@/constants/dither";
 import { STUDIO_PAGE, TEAM_MEMBERS } from "@/constants/pages";
 import { FEATURED_PROJECT, getProjectHref } from "@/constants/projects";
 import { DitherImage } from "@/features/dither-image";
+import { asset } from "@/utils/asset";
 
 const MEMBER_COUNT = TEAM_MEMBERS.length;
 
@@ -49,7 +50,7 @@ export function StudioHeroSection() {
             onClick={() => go(-1)}
           >
             <Image
-              src="/icons/arrow-prev.svg"
+              src={asset("/icons/arrow-prev.svg")}
               alt=""
               width={48}
               height={48}
@@ -63,7 +64,7 @@ export function StudioHeroSection() {
             onClick={() => go(1)}
           >
             <Image
-              src="/icons/arrow-next.svg"
+              src={asset("/icons/arrow-next.svg")}
               alt=""
               width={48}
               height={48}
@@ -113,7 +114,7 @@ export function StudioHeroSection() {
           </span>
           <span className="flex h-90 w-56 items-center justify-center bg-olive lg:h-150 lg:w-93">
             <Image
-              src="/icons/chevron-right-light.svg"
+              src={asset("/icons/chevron-right-light.svg")}
               alt=""
               width={37}
               height={37}

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { RollText } from "@/components/ui/roll-text";
 import { cn } from "@/utils/cn";
+import { asset } from "@/utils/asset";
 
 type ArrowLinkProps = {
   href: string;
@@ -10,9 +11,12 @@ type ArrowLinkProps = {
 };
 
 const TONES = {
-  light: { text: "text-white", icon: "/icons/arrow-up-right-light.svg" },
-  dark: { text: "text-black-graw", icon: "/icons/arrow-up-right-dark.svg" },
-  red: { text: "text-red-graw", icon: "/icons/arrow-up-right-red.svg" },
+  light: { text: "text-white", icon: asset("/icons/arrow-up-right-light.svg") },
+  dark: {
+    text: "text-black-graw",
+    icon: asset("/icons/arrow-up-right-dark.svg"),
+  },
+  red: { text: "text-red-graw", icon: asset("/icons/arrow-up-right-red.svg") },
 } as const;
 
 /** Uppercase CTA with the Figma "arrow-up-right" icon. */

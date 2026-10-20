@@ -1,4 +1,5 @@
 import type { Discipline, Project } from "@/types/project";
+import { asset } from "@/utils/asset";
 
 /** The Figma uses one placeholder project everywhere. */
 export const PROJECTS: readonly Project[] = [
@@ -10,8 +11,8 @@ export const PROJECTS: readonly Project[] = [
     client: "Allce. Co",
     category: "brand identy",
     year: "2022",
-    cover: "/images/home/featured-project.webp",
-    thumbnail: "/images/home/project-thumb-lorena.webp",
+    cover: asset("/images/home/featured-project.webp"),
+    thumbnail: asset("/images/home/project-thumb-lorena.webp"),
   },
 ];
 

@@ -7,6 +7,7 @@ import { ParallaxImage } from "@/components/ui/parallax-image";
 import { SplitReveal } from "@/components/ui/split-reveal";
 import { FEATURED_SLIDES, getProjectHref } from "@/constants/projects";
 import { cn } from "@/utils/cn";
+import { asset } from "@/utils/asset";
 
 const SLIDE_COUNT = FEATURED_SLIDES.length;
 
@@ -54,7 +55,7 @@ export function FeaturedProjectSection() {
           </span>
           <span className="flex h-90.5 w-56 items-center justify-center bg-white">
             <Image
-              src="/icons/chevron-right-dark.svg"
+              src={asset("/icons/chevron-right-dark.svg")}
               alt=""
               width={22}
               height={22}
@@ -120,7 +121,7 @@ export function FeaturedProjectSection() {
           </span>
           <span className="flex h-90 w-56 items-center justify-center bg-olive lg:h-150 lg:w-93">
             <Image
-              src="/icons/chevron-right-light.svg"
+              src={asset("/icons/chevron-right-light.svg")}
               alt=""
               width={37}
               height={37}

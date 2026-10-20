@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { asset } from "@/utils/asset";
 
 /**
  * Header logo (HOTBAR): wordmark plus the "DESIGN" tag. Both color variants
@@ -8,7 +9,7 @@ export function HeaderLogo() {
   return (
     <span className="relative block h-40.5 w-67 lg:h-54 lg:w-89.5">
       <Image
-        src="/icons/logo-the-craw-light.svg"
+        src={asset("/icons/logo-the-craw-light.svg")}
         alt=""
         width={88}
         height={55}
@@ -16,7 +17,7 @@ export function HeaderLogo() {
         className="absolute top-[-0.52%] left-[-0.31%] h-[101.04%] w-[98.29%] max-w-none transition-opacity duration-300 group-data-[theme=dark]/header:opacity-0"
       />
       <Image
-        src="/icons/logo-the-craw-dark.svg"
+        src={asset("/icons/logo-the-craw-dark.svg")}
         alt=""
         width={88}
         height={55}

@@ -1,5 +1,6 @@
 import { STUDIO_INFO } from "@/constants/studio";
 import type { Service } from "@/types/project";
+import { asset } from "@/utils/asset";
 
 const DESCRIPTION =
   "Criamos o conceito visual da marca e todos oe elemtnos visuais que fazem ela ter personalizadade própria, do logotipo a cores fortes, imagens e grafismos";
@@ -54,7 +55,7 @@ export const SERVICE_DETAILS = [
     slug: "branding",
     title: "Branding",
     category: "brand identy",
-    image: "/images/services/branding.webp",
+    image: asset("/images/services/branding.webp"),
     hire: "contrate",
     projectsLabel: "projects <branding>",
     back: "back",

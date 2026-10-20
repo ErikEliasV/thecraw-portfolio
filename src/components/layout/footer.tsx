@@ -5,6 +5,7 @@ import { FOOTER_DITHER } from "@/constants/dither";
 import { FOOTER_LINKS } from "@/constants/navigation";
 import { STUDIO_INFO } from "@/constants/studio";
 import { DitherImage } from "@/features/dither-image";
+import { asset } from "@/utils/asset";
 
 const LINK_POSITION = ["lg:left-886", "lg:left-1522"] as const;
 
@@ -20,7 +21,7 @@ export function Footer() {
       <DitherImage {...FOOTER_DITHER} animation="scroll" />
       <div className="relative flex flex-col gap-48 px-16 pt-96 pb-64 lg:static lg:block lg:p-0">
         <Image
-          src="/icons/logo-the-craw-wordmark.svg"
+          src={asset("/icons/logo-the-craw-wordmark.svg")}
           alt="The Craw"
           width={174}
           height={31}
