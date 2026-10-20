@@ -40,6 +40,8 @@ export type DitherImageProps = {
   /** Random per-cell offset amplitude, as in Figma (0.5 = 50%). */
   scatter?: number;
   frame?: DitherFrame;
+  /** Frame below the `lg` breakpoint (no Figma mobile frames); defaults to `frame`. */
+  mobileFrame?: DitherFrame;
   animation?: DitherAnimation;
   className?: string;
 };
