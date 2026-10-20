@@ -1,12 +1,15 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, type KeyboardEvent, type RefObject } from "react";
-import { NAV_LINKS } from "@/constants/navigation";
-import { useLenis } from "@/hooks/use-lenis";
+import { RollText } from "@/components/ui/roll-text";
+import { MENU_VISUAL, NAV_LINKS } from "@/constants/navigation";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { EASE, gsap, useGSAP } from "@/lib/gsap";
+import { DURATION, EASE, gsap, useGSAP } from "@/lib/gsap";
+import { getLenis } from "@/lib/smooth-scroll-provider";
+import { cn } from "@/utils/cn";
 
 type SiteMenuProps = {
   open: boolean;
@@ -15,81 +18,116 @@ type SiteMenuProps = {
 };
 
 const FOCUSABLE = "a[href], button:not([disabled])";
+const DESKTOP = "(min-width: 64rem)";
+/** Links from this index sit in the panel's right column. */
+const SECOND_COLUMN = 2;
+
+// The panel wipes down with a slanted edge while its links straighten up
+// from a tilted zoom, and the blur veils the page behind it.
+const CLIP_CLOSED = "polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)";
+const CLIP_OPEN = "polygon(0% 0%, 100% 0%, 100% 175%, 0% 100%)";
+const CONTENT_AWAY = {
+  rotation: -15,
+  x: -100,
+  y: -100,
+  scale: 1.5,
+  opacity: 0.25,
+};
+const CONTENT_AT_REST = { rotation: 0, x: 0, y: 0, scale: 1, opacity: 1 };
+
+/**
+ * Entrance timeline. Closing plays it backwards, so the exit mirrors the
+ * entrance and either direction can take over midway.
+ */
+function buildMenuTimeline(root: HTMLElement, onClosed: () => void) {
+  const veil = root.querySelector("[data-menu-veil]");
+  const panel = root.querySelector("[data-menu-panel]");
+  const content = root.querySelector("[data-menu-content]");
+  const links = gsap.utils.toArray<HTMLElement>("[data-menu-link]", root);
+  const visuals = gsap.utils.toArray<HTMLElement>("[data-menu-visual]", root);
+  // Without hover, the thumbnails open with the menu instead.
+  const touch = !window.matchMedia(DESKTOP).matches;
+
+  // GSAP writes into the vars it receives, so each tween gets fresh copies.
+  const timeline = gsap
+    .timeline({
+      paused: true,
+      defaults: { ease: EASE.menu, duration: DURATION.menu },
+      onReverseComplete: () => {
+        gsap.set(root, { visibility: "hidden" });
+        gsap.set([veil, panel, content, ...links, ...visuals], {
+          clearProps: "all",
+        });
+        onClosed();
+      },
+    })
+    .fromTo(veil, { opacity: 0 }, { opacity: 1 }, 0)
+    .fromTo(panel, { clipPath: CLIP_CLOSED }, { clipPath: CLIP_OPEN }, 0)
+    .fromTo(content, { ...CONTENT_AWAY }, { ...CONTENT_AT_REST }, 0)
+    .fromTo(
+      links,
+      { yPercent: 120 },
+      { yPercent: 0, duration: 1.5, ease: EASE.menuLinks, stagger: 0.05 },
+      0.8,
+    );
+  if (touch) {
+    timeline.fromTo(
+      visuals,
+      { width: 0 },
+      {
+        width: window.innerWidth < 768 ? 54 : 67,
+        duration: 0.8,
+        ease: EASE.menuVisual,
+        stagger: 0.05,
+      },
+      "-=0.9",
+    );
+  }
+  return timeline;
+}
 
 export function SiteMenu({ open, onClose, returnFocusRef }: SiteMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
-  const lenis = useLenis();
+  const wasOpenRef = useRef(false);
   const reducedMotion = useReducedMotion();
   const pathname = usePathname();
-
-  useGSAP(
-    () => {
-      const root = rootRef.current;
-      if (!root) return;
-
-      timelineRef.current = gsap
-        .timeline({
-          paused: true,
-          defaults: { ease: EASE.expo },
-          onReverseComplete: () => gsap.set(root, { visibility: "hidden" }),
-        })
-        .fromTo(
-          "[data-menu-veil]",
-          { opacity: 0 },
-          { opacity: 1, duration: 0.6, ease: EASE.out },
-        )
-        .fromTo(
-          "[data-menu-panel]",
-          { clipPath: "inset(0% 0% 100% 0%)" },
-          { clipPath: "inset(0% 0% 0% 0%)", duration: 0.9 },
-          0,
-        )
-        .fromTo(
-          "[data-menu-link]",
-          { yPercent: 110 },
-          { yPercent: 0, duration: 1, stagger: 0.06 },
-          0.15,
-        )
-        .fromTo(
-          "[data-menu-close]",
-          { opacity: 0 },
-          { opacity: 1, duration: 0.4, ease: EASE.out },
-          0.3,
-        );
-    },
-    { scope: rootRef },
-  );
+  const { contextSafe } = useGSAP({ scope: rootRef });
 
   useEffect(() => {
-    const timeline = timelineRef.current;
-    if (!timeline) return;
+    if (open === wasOpenRef.current) return;
+    wasOpenRef.current = open;
+
+    const root = rootRef.current;
+    if (!root) return;
 
     if (open) {
-      // Visible before focusing: hidden elements cannot receive focus.
-      gsap.set(rootRef.current, { visibility: "visible" });
-      if (reducedMotion) timeline.progress(1);
-      else timeline.timeScale(1).play();
-      lenis?.stop();
+      getLenis()?.stop();
       document.documentElement.style.overflow = "hidden";
+      // Reopening mid-exit keeps the running timeline and plays it forward.
+      timelineRef.current ??= contextSafe(buildMenuTimeline)(root, () => {
+        timelineRef.current?.kill();
+        timelineRef.current = null;
+        document.documentElement.style.overflow = "";
+        getLenis()?.start();
+      });
+      gsap.set(root, { visibility: "visible" });
+      if (reducedMotion) timelineRef.current.progress(1);
+      else timelineRef.current.play();
+      // Visible before focusing: hidden elements cannot receive focus.
       closeRef.current?.focus({ preventScroll: true });
       return;
     }
 
-    if (timeline.progress() === 0) return;
-    if (reducedMotion) {
-      timeline.progress(0);
-      gsap.set(rootRef.current, { visibility: "hidden" });
-    } else {
-      timeline.timeScale(1.6).reverse();
-    }
-    lenis?.start();
-    document.documentElement.style.overflow = "";
-    if (rootRef.current?.contains(document.activeElement)) {
+    const timeline = timelineRef.current;
+    if (!timeline) return;
+    if (root.contains(document.activeElement)) {
       returnFocusRef.current?.focus({ preventScroll: true });
     }
-  }, [open, lenis, reducedMotion, returnFocusRef]);
+    if (reducedMotion) timeline.progress(0);
+    else timeline.reverse();
+  }, [open, contextSafe, reducedMotion, returnFocusRef]);
 
   useEffect(() => {
     if (!open) return;
@@ -135,36 +173,69 @@ export function SiteMenu({ open, onClose, returnFocusRef }: SiteMenuProps) {
       />
       <div
         data-menu-panel
-        className="absolute inset-x-16 top-16 bg-menu px-24 pt-96 pb-48 lg:inset-x-auto lg:top-31 lg:right-55 lg:h-629 lg:w-1339 lg:p-0"
+        className="absolute inset-x-16 top-16 overflow-hidden bg-menu px-24 pt-96 pb-48 [clip-path:polygon(0%_0%,100%_0%,100%_0%,0%_0%)] lg:inset-x-auto lg:top-31 lg:right-55 lg:h-629 lg:w-1339 lg:p-0"
       >
+        <nav
+          data-menu-content
+          aria-label="Principal"
+          className="lg:absolute lg:inset-0"
+        >
+          <ul className="flex flex-col lg:absolute lg:top-146 lg:left-101 lg:grid lg:grid-flow-col lg:grid-cols-[calc(var(--spacing)*646.75)_auto] lg:grid-rows-2">
+            {NAV_LINKS.map((link, index) => {
+              // The right column has no room to push its words, so the
+              // thumbnail grows into the gutter on their left instead.
+              const intoGutter = index >= SECOND_COLUMN;
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    aria-current={pathname === link.href ? "page" : undefined}
+                    className={cn(
+                      "group relative -ml-5 flex items-center md:-ml-8",
+                      intoGutter && "lg:ml-0",
+                    )}
+                    onClick={onClose}
+                  >
+                    <span
+                      data-menu-visual
+                      aria-hidden
+                      className={cn(
+                        "relative mr-5 h-36 w-0 shrink-0 overflow-hidden rounded-[0.2rem] md:mr-8 md:h-46 md:rounded-[0.3rem] lg:h-112 lg:rounded-[calc(var(--spacing)*4.8)] lg:transition-[width] lg:duration-800 lg:ease-menu-visual lg:group-hover:w-168 lg:group-focus-visible:w-168",
+                        intoGutter &&
+                          "lg:absolute lg:top-1/2 lg:right-full lg:-translate-y-1/2",
+                      )}
+                    >
+                      <Image
+                        src={MENU_VISUAL}
+                        alt=""
+                        fill
+                        sizes="(min-width: 64rem) 9vw, 67px"
+                        className="object-cover"
+                      />
+                    </span>
+                    <span className="block overflow-hidden pr-8">
+                      <span
+                        data-menu-link
+                        className="block text-display text-menu-link transition-colors duration-300 ease-power3 will-change-transform group-hover:text-black-graw group-focus-visible:text-black-graw"
+                      >
+                        {link.label}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
         <button
           ref={closeRef}
           type="button"
-          data-menu-close
           aria-label="Fechar menu"
           className="group absolute top-16 right-16 bg-black-graw px-19 pt-5 pb-4 text-nav text-red-graw lg:top-14.25 lg:right-11"
           onClick={onClose}
         >
-          Menu
+          <RollText>Menu</RollText>
         </button>
-        <nav aria-label="Principal">
-          <ul className="flex flex-col lg:absolute lg:top-146 lg:left-101 lg:grid lg:grid-flow-col lg:grid-cols-[calc(var(--spacing)*646.75)_auto] lg:grid-rows-2">
-            {NAV_LINKS.map((link) => (
-              <li key={link.href} className="overflow-hidden">
-                <Link
-                  href={link.href}
-                  aria-current={pathname === link.href ? "page" : undefined}
-                  className="block text-display text-menu-link transition-colors duration-300 ease-power3 hover:text-black-graw focus-visible:text-black-graw"
-                  onClick={onClose}
-                >
-                  <span data-menu-link className="block">
-                    {link.label}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
       </div>
     </div>
   );
