@@ -41,3 +41,22 @@ export const LETS_WORK = {
     "Drop it, we'll build it!",
   ],
 } as const;
+
+/** Figma "Services" accordion: three blank panels (red, taupe, gray). */
+export const SERVICE_PANELS = [
+  { title: "Branding", className: "bg-red-graw", href: "/services/branding" },
+  { title: "Products", className: "bg-taupe", href: null },
+  { title: "Motion e 3D", className: "bg-gray-graw", href: null },
+] as const;
+
+export const SERVICE_DETAILS = [
+  {
+    slug: "branding",
+    title: "Branding",
+    category: "brand identy",
+    image: "/images/services/branding.webp",
+    hire: "contrate",
+    projectsLabel: "projects <branding>",
+    back: "back",
+  },
+] as const;
