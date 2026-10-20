@@ -1,11 +1,11 @@
 import { Footer } from "@/components/layout/footer";
-import { SITE_CONFIG } from "@/constants/site";
+import { HeroSection } from "@/components/sections/hero-section";
 
 export default function HomePage() {
   return (
     <>
       <main id="conteudo">
-        <h1 className="sr-only">{SITE_CONFIG.name}</h1>
+        <HeroSection />
       </main>
       <Footer />
     </>
