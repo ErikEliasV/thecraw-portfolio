@@ -31,3 +31,16 @@ export const FIGMA_RENDER_SCALE = 1.25;
 
 /** Ordered-dither subsamples per axis on a 1x screen (halved on 2x). */
 export const SUBSAMPLES_AT_1X = 4;
+
+/**
+ * Device-pixel size of a dither cell and subsamples per axis. Sub-pixel cells
+ * (Figma's 1.25x raster) are supersampled; visible cells snap to whole pixels.
+ */
+export function ditherCellSize(pixelSize: number, pixelRatio: number) {
+  const cell = (pixelSize * pixelRatio) / FIGMA_RENDER_SCALE;
+  if (cell >= 1.5) return { cell: Math.round(cell), subsamples: 1 };
+  return {
+    cell,
+    subsamples: Math.max(1, Math.round(SUBSAMPLES_AT_1X / pixelRatio)),
+  };
+}

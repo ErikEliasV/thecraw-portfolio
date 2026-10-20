@@ -11,10 +11,9 @@ import {
   createBayerThresholds,
 } from "@/features/dither-image/utils/bayer";
 import {
-  FIGMA_RENDER_SCALE,
+  ditherCellSize,
   figmaLuma,
   quantizeChannel,
-  SUBSAMPLES_AT_1X,
 } from "@/features/dither-image/utils/color";
 import { containerToImageUv } from "@/features/dither-image/utils/frame";
 import { hash2d } from "@/features/dither-image/utils/hash";
@@ -74,12 +73,11 @@ export function DitherFallback({
       const dpr = Math.min(window.devicePixelRatio, MAX_DPR);
       const canvasWidth = Math.round(width * dpr);
       const canvasHeight = Math.round(height * dpr);
-      const rawCell = (pixelSize * dpr) / FIGMA_RENDER_SCALE;
-      const cell = rawCell >= 1 ? Math.round(rawCell) : rawCell;
-      const subsamples =
-        quantize === "ordered"
-          ? Math.max(1, Math.round(SUBSAMPLES_AT_1X / dpr))
-          : 1;
+      const { cell, subsamples: cellSubsamples } = ditherCellSize(
+        pixelSize,
+        dpr,
+      );
+      const subsamples = quantize === "ordered" ? cellSubsamples : 1;
       const output = new ImageData(canvasWidth, canvasHeight);
       const alpha = Math.round(opacity * 255);
       const sampleCell = Math.max(cell, 1);
