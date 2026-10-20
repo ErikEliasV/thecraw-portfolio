@@ -16,6 +16,13 @@ Estas regras valem para todas as sessões. Siga-as sem exceção.
 - Assets (imagens, ícones, fontes) baixados para `public/`.
 - Telas **fiéis ao Figma**: layout, proporções, tipografia, espaçamentos e hierarquia, em desktop e mobile (seguir frames mobile se existirem; senão, adaptar mantendo a linguagem visual).
 - Se o Figma MCP não responder ou um frame não puder ser lido: **parar e avisar**, nunca inventar o visual.
+- Nome da marca: **THE CRAW** (o Figma escreve "THE GRAW"; nos logos, o "G" foi trocado pelo "C" da SF Pro Display). Os contatos (e-mail, @) seguem como estão no Figma.
+
+### Escala e tipografia
+
+- Utilitários de espaçamento usam **pixels do Figma**: 1 unidade = 1px abaixo de `lg` e 1px do frame de 1920 escalado a partir de `lg` (`--spacing`). Ex.: `lg:left-218` = 218px do Figma.
+- Tamanhos de fonte só pelos tokens `text-*` do tema (escalados por `--fluid`). Páginas desenhadas em 1440 redefinem `--fluid` e `--spacing` no elemento raiz.
+- Fontes locais em `public/fonts/` via `next/font/local`: SF Pro Display (400, 500, 700) e Seagram tfb.
 
 ### Cores (regra crítica)
 
@@ -25,7 +32,7 @@ Estas regras valem para todas as sessões. Siga-as sem exceção.
 
 ## 3. Efeito dither (hero e footer)
 
-- WebGL com **Three.js** e shader próprio. Fragment shader com **ordered dithering** (Bayer 4x4 ou 8x8): luminância → comparação com o limiar da matriz → cor da paleta.
+- WebGL com **Three.js** e shader próprio. Fragment shader com **ordered dithering** (Bayer 16x16, igual ao Figma): luminância → comparação com o limiar da matriz → cor da paleta.
 - Paleta do dither: **somente cores extraídas do Figma**, na mesma ordem e proporção do exemplo.
 - Tamanho do "pixel" configurável por uniform, nítido (sem suavização).
 - GSAP controlando os uniforms:

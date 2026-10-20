@@ -1,7 +1,13 @@
 @import "tailwindcss";
 
-@theme {
-  /* Only Figma colors are available: the default palette is removed. */
+/*
+ * Spacing utilities use Figma pixels: 1 unit = 1px below `lg`,
+ * and 1 design pixel of the 1920px frame from `lg` up (see `--spacing` below).
+ */
+@theme static {
+  --spacing: 1px;
+
+  /* Only Figma colors exist: the default palette is removed. */
   --color-*: initial;
   --color-transparent: transparent;
   --color-current: currentColor;
@@ -12,10 +18,118 @@
   --color-white-graw: #ebebeb;
   --color-red-graw: #c40113;
   --color-black-graw: #0f0f0f;
+  --color-gray-graw: #424242;
 
   /* Figma fills without a variable */
-  --color-red-graw-deep: #7b000b;
+  --color-ink: #111111;
+  --color-paper: #e4e4e4;
+  --color-placeholder: #d9d9d9;
+  --color-menu: #d6d6d6;
+  --color-menu-link: #7f7f7f;
+  --color-bar: #787878;
+  --color-taupe: #9f9192;
   --color-olive: #84835e;
+  --color-yellow: #f8bf03;
+  --color-orange: #ff4000;
+  --color-coal: #191919;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Figma shader gradient-map stops */
+  --color-red-graw-deep: #7b000b;
+  --color-silver: #cdcdcd;
+
+  /* Figma translucent fills */
+  --color-shade: rgb(0 0 0 / 0.52);
+  --color-fade-light: rgb(228 228 228 / 0.19);
+  --color-fade-dark: rgb(15 15 15 / 0.19);
+  --color-tint: rgb(1 60 196 / 0.01);
+
+  --blur-fade: 13.05px;
+  --blur-veil: 41.6px;
+}
+
+/* Type scale: Figma sizes scaled by the design frame width (`--fluid`). */
+@theme inline {
+  --font-sans: var(--font-sf-pro), ui-sans-serif, system-ui, sans-serif;
+  --font-blackletter: var(--font-seagram), serif;
+
+  --text-*: initial;
+
+  --text-hero: calc(var(--fluid) * 284.862);
+  --text-hero--line-height: 1.2;
+  --text-hero--letter-spacing: -0.07em;
+  --text-mega: calc(var(--fluid) * 365.027);
+  --text-mega--line-height: 1.2;
+  --text-mega--letter-spacing: -0.07em;
+  --text-end: calc(var(--fluid) * 338.106);
+  --text-end--line-height: 1.2;
+  --text-end--letter-spacing: -0.07em;
+  --text-giant: calc(var(--fluid) * 248.266);
+  --text-giant--line-height: 1.2;
+  --text-giant--letter-spacing: -0.07em;
+  --text-display: max(3rem, calc(var(--fluid) * 156));
+  --text-display--line-height: 0.93;
+  --text-display--letter-spacing: -0.04em;
+  --text-title: max(2.75rem, calc(var(--fluid) * 136.397));
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.07em;
+  --text-card: max(2.5rem, calc(var(--fluid) * 113.602));
+  --text-card--line-height: 1.2;
+  --text-card--letter-spacing: -0.07em;
+  --text-heading: max(2.25rem, calc(var(--fluid) * 77.552));
+  --text-heading--line-height: 1.2;
+  --text-heading--letter-spacing: -0.04em;
+  --text-subheading: max(2rem, calc(var(--fluid) * 67.779));
+  --text-subheading--line-height: 0.93;
+  --text-subheading--letter-spacing: -0.04em;
+  --text-xl: max(1.75rem, calc(var(--fluid) * 56));
+  --text-xl--line-height: 1.2;
+  --text-xl--letter-spacing: -0.07em;
+  --text-lg: max(1.75rem, calc(var(--fluid) * 53.587));
+  --text-lg--line-height: 1.2;
+  --text-lg--letter-spacing: -0.07em;
+  --text-button: max(1.5rem, calc(var(--fluid) * 40));
+  --text-button--line-height: 1.2;
+  --text-credit: max(1.5rem, calc(var(--fluid) * 38));
+  --text-credit--line-height: 1;
+  --text-nav: max(1.5rem, calc(var(--fluid) * 37.552));
+  --text-nav--line-height: 1.2;
+  --text-number: max(1.25rem, calc(var(--fluid) * 30));
+  --text-number--line-height: 0.93;
+  --text-number--letter-spacing: -0.04em;
+  --text-label: max(1.125rem, calc(var(--fluid) * 26));
+  --text-label--line-height: 1.2;
+  --text-md: max(1rem, calc(var(--fluid) * 24.577));
+  --text-md--line-height: 1.2;
+  --text-md--letter-spacing: -0.07em;
+  --text-body: max(1rem, calc(var(--fluid) * 24));
+  --text-body--line-height: 1;
+  --text-meta: max(0.875rem, calc(var(--fluid) * 21.864));
+  --text-meta--line-height: 0.86;
+  --text-meta--letter-spacing: -0.07em;
+  --text-small: max(0.875rem, calc(var(--fluid) * 18.551));
+  --text-small--line-height: 1.04;
+  --text-tag: max(0.75rem, calc(var(--fluid) * 17.193));
+  --text-tag--line-height: 1.2;
+  --text-tag--letter-spacing: -0.07em;
+  --text-desc: max(0.8125rem, calc(var(--fluid) * 16));
+  --text-desc--line-height: 0.93;
+  --text-desc--letter-spacing: -0.04em;
+  --text-caption: max(0.75rem, calc(var(--fluid) * 14.959));
+  --text-caption--line-height: 0.93;
+  --text-caption--letter-spacing: -0.04em;
+  --text-micro: max(0.4375rem, calc(var(--fluid) * 9.33));
+  --text-micro--letter-spacing: -0.13em;
+
+  --tracking-tight: -0.07em;
+  --tracking-snug: -0.04em;
+}
+
+:root {
+  --fluid: calc(100vw / 1920);
+}
+
+@media (width >= 64rem) {
+  :root {
+    --spacing: var(--fluid);
+  }
 }
