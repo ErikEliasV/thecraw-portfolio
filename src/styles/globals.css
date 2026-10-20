@@ -45,6 +45,12 @@
 
   --blur-fade: 13.05px;
   --blur-veil: 41.6px;
+  --blur-menu: 64px;
+
+  /* GSAP easings as CSS curves for transitions */
+  --ease-power3: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-power2-in-out: cubic-bezier(0.455, 0.03, 0.515, 0.955);
 }
 
 /* Type scale: Figma sizes scaled by the design frame width (`--fluid`). */
