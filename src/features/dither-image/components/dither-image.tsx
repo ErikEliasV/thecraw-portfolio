@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useWebGLSupport } from "@/features/dither-image/hooks/use-webgl-support";
 import type { DitherImageProps } from "@/features/dither-image/types";
 import { FULL_FRAME } from "@/features/dither-image/utils/frame";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/utils/cn";
 
@@ -37,12 +38,22 @@ export function DitherImage({
   offset = 0,
   scatter = 0,
   frame = FULL_FRAME,
+  mobileFrame = frame,
   animation = "intro",
   className,
 }: DitherImageProps) {
   const webgl = useWebGLSupport();
   const reducedMotion = useReducedMotion();
-  const options = { src, palette, pixelSize, opacity, offset, scatter, frame };
+  const desktop = useMediaQuery("(min-width: 64rem)");
+  const options = {
+    src,
+    palette,
+    pixelSize,
+    opacity,
+    offset,
+    scatter,
+    frame: desktop ? frame : mobileFrame,
+  };
 
   return (
     <div

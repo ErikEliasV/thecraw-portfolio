@@ -1,6 +1,9 @@
-import type { DitherImageProps } from "@/features/dither-image";
+import type { DitherFrame, DitherImageProps } from "@/features/dither-image";
 
 type DitherPreset = Omit<DitherImageProps, "alt" | "animation" | "className">;
+
+/** Plain cover of the container, used on small screens. */
+const COVER_FRAME: DitherFrame = { x: 0, y: 0, width: 1, height: 1 };
 
 /** Figma "Desktop - 1": gradient map white → RED GRAW → deep red, Bayer dither. */
 export const HERO_DITHER: DitherPreset = {
@@ -13,6 +16,7 @@ export const HERO_DITHER: DitherPreset = {
   pixelSize: 1,
   // Image rectangle 2274×2069 at (-40, -217.66) in the 1920×1080 frame.
   frame: { x: -0.02083, y: -0.20154, width: 1.18438, height: 1.91604 },
+  mobileFrame: COVER_FRAME,
 };
 
 /** Figma "Footer": image at 29% over RED GRAW, offset −15%, scatter 50%, pixelate 2. */
@@ -44,4 +48,5 @@ export const STUDIO_DITHER: DitherPreset = {
   offset: -0.15,
   scatter: 0.5,
   frame: { x: -0.0576, y: -0.4935, width: 1.1152, height: 2.9861 },
+  mobileFrame: COVER_FRAME,
 };
