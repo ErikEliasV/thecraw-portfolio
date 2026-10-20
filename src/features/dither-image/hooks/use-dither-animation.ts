@@ -6,7 +6,7 @@ import type { DitherAnimation } from "@/features/dither-image/types";
 import { EASE, gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 
 const ENTRY_COARSE = 8;
-const SCROLL_COARSE = 6;
+const SCROLL_COARSE = 2.5;
 
 /** GSAP-driven uniforms: entry reveal, scroll coarsening and cursor lens. */
 export function useDitherAnimation(
