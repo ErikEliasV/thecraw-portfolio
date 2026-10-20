@@ -5,7 +5,10 @@ type DitherPreset = Omit<DitherImageProps, "alt" | "animation" | "className">;
 /** Plain cover of the container, used on small screens. */
 const COVER_FRAME: DitherFrame = { x: 0, y: 0, width: 1, height: 1 };
 
-/** Figma "Desktop - 1": gradient map white → RED GRAW → deep red, then Dither (Bayer 16x16, 3 levels). */
+/**
+ * Figma "Desktop - 1" palette (white → RED GRAW → deep red), rendered like the
+ * footer at the user's request: gradient map with grain, 3px pixels.
+ */
 export const HERO_DITHER: DitherPreset = {
   src: "/images/home/hero-knight.webp",
   palette: [
@@ -13,9 +16,10 @@ export const HERO_DITHER: DitherPreset = {
     { token: "red-graw", position: 0.5 },
     { token: "red-graw-deep", position: 1 },
   ],
-  pixelSize: 1,
-  quantize: "ordered",
-  levels: 3,
+  pixelSize: 3.75,
+  scatter: 0.3,
+  quantize: "posterize",
+  levels: 16,
   // Image rectangle 2274×2069 at (-40, -217.66) in the 1920×1080 frame.
   frame: { x: -0.02083, y: -0.20154, width: 1.18438, height: 1.91604 },
   mobileFrame: COVER_FRAME,
@@ -29,7 +33,8 @@ export const FOOTER_DITHER: DitherPreset = {
     { token: "red-graw", position: 0.5 },
     { token: "black", position: 1 },
   ],
-  pixelSize: 2,
+  // Visible pixels: 3px cells (Figma pixelates at 2px).
+  pixelSize: 3.75,
   opacity: 0.29,
   offset: -0.15,
   scatter: 0.5,
