@@ -23,6 +23,7 @@ const twMerge = extendTailwindMerge({
         "number",
         "label",
         "md",
+        "cta",
         "body",
         "meta",
         "small",
