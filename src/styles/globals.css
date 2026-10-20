@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  /* Only Figma colors are available: the default palette is removed. */
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Figma variables */
+  --color-white-graw: #ebebeb;
+  --color-red-graw: #c40113;
+  --color-black-graw: #0f0f0f;
+
+  /* Figma fills without a variable */
+  --color-red-graw-deep: #7b000b;
+  --color-olive: #84835e;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
