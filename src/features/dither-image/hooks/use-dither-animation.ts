@@ -11,15 +11,13 @@ const SCROLL_COARSE = 2.5;
 /** GSAP-driven uniforms: entry reveal, scroll coarsening and cursor lens. */
 export function useDitherAnimation(
   containerRef: RefObject<HTMLDivElement | null>,
-  uniformsRef: RefObject<DitherUniforms | null>,
-  ready: boolean,
+  uniforms: DitherUniforms | null,
   animation: DitherAnimation,
 ) {
   useGSAP(
     () => {
       const container = containerRef.current;
-      const uniforms = uniformsRef.current;
-      if (!ready || !container || !uniforms || animation === "none") return;
+      if (!container || !uniforms || animation === "none") return;
 
       // Entry: cells materialize in Bayer order while the grain sharpens.
       const intro = gsap
@@ -104,6 +102,6 @@ export function useDitherAnimation(
         );
       };
     },
-    { dependencies: [ready, animation], revertOnUpdate: true },
+    { dependencies: [uniforms, animation], revertOnUpdate: true },
   );
 }
