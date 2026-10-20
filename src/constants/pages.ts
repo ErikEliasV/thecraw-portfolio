@@ -29,3 +29,26 @@ export const PROJECT_PAGE = {
   ],
   end: "END",
 } as const;
+
+const TEAM_BIO =
+  "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since 1966, when";
+
+/** Figma shows one placeholder member; the arrows cycle through the team. */
+export const TEAM_MEMBERS = [
+  { name: "Nome", role: "Função", bio: TEAM_BIO },
+  { name: "Nome", role: "Função", bio: TEAM_BIO },
+  { name: "Nome", role: "Função", bio: TEAM_BIO },
+] as const;
+
+export const STUDIO_PAGE = {
+  title: "Studio",
+  headline: "DIGITAL DESIGNER",
+  projectsLead: "Projects Lead",
+  portrait: "/images/studio/portrait.webp",
+  sections: [
+    { heading: "Proposito", body: LOREM_SHORT },
+    { heading: "Pilares", body: LOREM_SHORT },
+    { heading: "Fundamentos", body: LOREM_SHORT },
+  ],
+  video: "video",
+} as const;
