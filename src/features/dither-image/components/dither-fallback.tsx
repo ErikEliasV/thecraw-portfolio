@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { DitherFrame, DitherPalette } from "@/features/dither-image/types";
+import type {
+  DitherFrame,
+  DitherPalette,
+  DitherQuantize,
+} from "@/features/dither-image/types";
 import {
   BAYER_SIZE,
   createBayerThresholds,
 } from "@/features/dither-image/utils/bayer";
+import {
+  figmaLuma,
+  quantizeChannel,
+} from "@/features/dither-image/utils/color";
 import { containerToImageUv } from "@/features/dither-image/utils/frame";
 import { hash2d } from "@/features/dither-image/utils/hash";
 import {
-  ditherPalette,
+  gradientMap,
   resolvePalette,
 } from "@/features/dither-image/utils/palette";
 
@@ -20,14 +28,16 @@ type DitherFallbackProps = {
   opacity: number;
   offset: number;
   scatter: number;
+  quantize: DitherQuantize;
+  levels: number;
   frame: DitherFrame;
 };
 
 const MAX_DPR = 2;
 
 /**
- * Static render on a 2D canvas (no WebGL, or reduced motion): same gradient
- * map, palette and Bayer dither as the shader, without animation.
+ * Static render on a 2D canvas (no WebGL, or reduced motion): the same Figma
+ * gradient map and quantization as the shader, without motion.
  */
 export function DitherFallback({
   src,
@@ -36,6 +46,8 @@ export function DitherFallback({
   opacity,
   offset,
   scatter,
+  quantize,
+  levels,
   frame,
 }: DitherFallbackProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -86,22 +98,22 @@ export function DitherFallback({
             Math.max(0, Math.floor(v * source.height)),
           );
           const index = (sy * source.width + sx) * 4;
-          const luma =
-            (0.2126 * source.data[index] +
-              0.7152 * source.data[index + 1] +
-              0.0722 * source.data[index + 2]) /
-            255;
+          const luma = figmaLuma(
+            source.data[index] / 255,
+            source.data[index + 1] / 255,
+            source.data[index + 2] / 255,
+          );
           const t = Math.min(
             1,
             Math.max(0, luma + (hash2d(column, row) - 0.5) * scatter - offset),
           );
           const threshold =
             thresholds[(row % BAYER_SIZE) * BAYER_SIZE + (column % BAYER_SIZE)];
-          const [r, g, b] = ditherPalette(resolved, t, threshold);
           const out = (row * columns + column) * 4;
-          output.data[out] = r * 255;
-          output.data[out + 1] = g * 255;
-          output.data[out + 2] = b * 255;
+          gradientMap(resolved, t).forEach((channel, offsetIndex) => {
+            output.data[out + offsetIndex] =
+              quantizeChannel(channel, quantize, levels, threshold) * 255;
+          });
           output.data[out + 3] = alpha;
         }
       }
@@ -146,7 +158,17 @@ export function DitherFallback({
       cancelAnimationFrame(frameRequest);
       resizeObserver.disconnect();
     };
-  }, [src, palette, pixelSize, opacity, offset, scatter, frame]);
+  }, [
+    src,
+    palette,
+    pixelSize,
+    opacity,
+    offset,
+    scatter,
+    quantize,
+    levels,
+    frame,
+  ]);
 
   return (
     <canvas ref={canvasRef} className="absolute inset-0 block size-full" />

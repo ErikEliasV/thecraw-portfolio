@@ -7,6 +7,7 @@ import type {
   DitherAnimation,
   DitherFrame,
   DitherPalette,
+  DitherQuantize,
 } from "@/features/dither-image/types";
 
 type DitherCanvasProps = {
@@ -16,6 +17,8 @@ type DitherCanvasProps = {
   opacity: number;
   offset: number;
   scatter: number;
+  quantize: DitherQuantize;
+  levels: number;
   frame: DitherFrame;
   animation: DitherAnimation;
 };

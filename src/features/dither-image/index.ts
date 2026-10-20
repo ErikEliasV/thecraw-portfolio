@@ -4,4 +4,5 @@ export type {
   DitherFrame,
   DitherImageProps,
   DitherPalette,
+  DitherQuantize,
 } from "@/features/dither-image/types";

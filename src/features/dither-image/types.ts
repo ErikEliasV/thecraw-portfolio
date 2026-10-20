@@ -26,12 +26,20 @@ export type DitherFrame = {
  */
 export type DitherAnimation = "intro" | "scroll" | "none";
 
+/**
+ * Figma effect applied after the gradient map:
+ * - `ordered`: "Dither" effect, per-channel Bayer 16x16 quantization.
+ * - `posterize`: "Pixelate" effect, flat per-channel quantization.
+ * - `none`: gradient map only.
+ */
+export type DitherQuantize = "ordered" | "posterize" | "none";
+
 export type DitherImageProps = {
   src: string;
   palette: DitherPalette;
   /** Accessible description; omit for decorative images. */
   alt?: string;
-  /** Size of a dither cell in CSS pixels. */
+  /** Size of a cell in CSS pixels. */
   pixelSize?: number;
   /** Opacity of the image layer over the container background. */
   opacity?: number;
@@ -39,6 +47,9 @@ export type DitherImageProps = {
   offset?: number;
   /** Random per-cell offset amplitude, as in Figma (0.5 = 50%). */
   scatter?: number;
+  quantize?: DitherQuantize;
+  /** Quantization levels per channel (Figma "Levels"). */
+  levels?: number;
   frame?: DitherFrame;
   /** Frame below the `lg` breakpoint (no Figma mobile frames); defaults to `frame`. */
   mobileFrame?: DitherFrame;

@@ -4,7 +4,11 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { DITHER_FRAGMENT_SHADER } from "@/features/dither-image/shaders/dither-fragment";
 import { DITHER_VERTEX_SHADER } from "@/features/dither-image/shaders/dither-vertex";
-import type { DitherFrame, DitherPalette } from "@/features/dither-image/types";
+import type {
+  DitherFrame,
+  DitherPalette,
+  DitherQuantize,
+} from "@/features/dither-image/types";
 import {
   BAYER_SIZE,
   createBayerThresholds,
@@ -16,6 +20,13 @@ import {
 import { gsap } from "@/lib/gsap";
 
 const MAX_DPR = 2;
+const QUANTIZE_MODE: Record<DitherQuantize, number> = {
+  none: 0,
+  ordered: 1,
+  posterize: 2,
+};
+/** Constant motion: flow-field distortion and tonal wave amplitudes. */
+const MOTION = { flow: 0.014, wave: 0.1 };
 
 export type DitherUniforms = {
   uImage: THREE.IUniform<THREE.Texture | null>;
@@ -30,8 +41,12 @@ export type DitherUniforms = {
   uOpacity: THREE.IUniform<number>;
   uOffset: THREE.IUniform<number>;
   uScatter: THREE.IUniform<number>;
+  uQuantize: THREE.IUniform<number>;
+  uLevels: THREE.IUniform<number>;
   uTime: THREE.IUniform<number>;
-  uShimmer: THREE.IUniform<number>;
+  uFlow: THREE.IUniform<number>;
+  uWave: THREE.IUniform<number>;
+  uLive: THREE.IUniform<number>;
   uReveal: THREE.IUniform<number>;
   uEntryCoarse: THREE.IUniform<number>;
   uScrollCoarse: THREE.IUniform<number>;
@@ -48,6 +63,8 @@ type DitherSceneOptions = {
   opacity: number;
   offset: number;
   scatter: number;
+  quantize: DitherQuantize;
+  levels: number;
   frame: DitherFrame;
   /** Render every frame while visible (animated) or only on demand. */
   continuous: boolean;
@@ -83,6 +100,8 @@ export function useDitherScene(
     opacity,
     offset,
     scatter,
+    quantize,
+    levels,
     frame,
     continuous,
   }: DitherSceneOptions,
@@ -142,8 +161,12 @@ export function useDitherScene(
       uOpacity: { value: opacity },
       uOffset: { value: offset },
       uScatter: { value: scatter },
+      uQuantize: { value: QUANTIZE_MODE[quantize] },
+      uLevels: { value: levels },
       uTime: { value: 0 },
-      uShimmer: { value: continuous ? 0.05 : 0 },
+      uFlow: { value: continuous ? MOTION.flow : 0 },
+      uWave: { value: continuous ? MOTION.wave : 0 },
+      uLive: { value: continuous ? 1 : 0 },
       uReveal: { value: continuous ? 0 : 1 },
       uEntryCoarse: { value: 1 },
       uScrollCoarse: { value: 1 },
@@ -204,7 +227,7 @@ export function useDitherScene(
           texture.dispose();
           return;
         }
-        // Raw sRGB values: luminance is computed on sRGB, like Figma.
+        // Raw values: the shader converts them like Figma does.
         texture.colorSpace = THREE.NoColorSpace;
         // UVs use a top-left origin, like the CSS layout.
         texture.flipY = false;
@@ -248,6 +271,8 @@ export function useDitherScene(
     opacity,
     offset,
     scatter,
+    quantize,
+    levels,
     frame,
     continuous,
   ]);
