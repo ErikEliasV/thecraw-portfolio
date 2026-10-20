@@ -14,10 +14,7 @@ import {
   BAYER_SIZE,
   createBayerThresholds,
 } from "@/features/dither-image/utils/bayer";
-import {
-  FIGMA_RENDER_SCALE,
-  SUBSAMPLES_AT_1X,
-} from "@/features/dither-image/utils/color";
+import { ditherCellSize } from "@/features/dither-image/utils/color";
 import {
   MAX_PALETTE_STOPS,
   resolvePalette,
@@ -31,18 +28,25 @@ const QUANTIZE_MODE: Record<DitherQuantize, number> = {
   posterize: 2,
 };
 /**
- * Motion with the effect's own pixels, per tick: share of pixels showing
- * another baked variant, pixels and blocks trading places, block size (CSS px).
+ * Motion with the effect's own pixels: share of cells showing another baked
+ * variant, cells hopping in calm air, and the wind (gust drift speed, max cells
+ * blown to the right, gust scale).
  */
-const MOTION = { boil: 0.15, swap: 0.035, blockSwap: 0.03, block: 3 };
+const MOTION = {
+  boil: 0.12,
+  swap: 0.03,
+  windSpeed: 0.9,
+  windStrength: 6,
+  windScale: 2.5,
+};
 /** Bayer phase (in cells) of each baked variant; variant 0 is the Figma one. */
 const VARIANT_PHASES = [
   [0, 0],
   [7, 3],
   [3, 11],
 ] as const;
-/** Random motion re-rolls this many times per second. */
-const TICKS_PER_SECOND = 12;
+/** The motion re-renders this many times per second when nothing else moves. */
+const TICKS_PER_SECOND = 24;
 
 /** Uniforms driven by GSAP (entry, scroll, cursor). */
 export type DitherUniforms = {
@@ -147,6 +151,15 @@ export function useDitherScene(
       new THREE.Vector3(...(rgb ?? [0, 0, 0]));
     const resolution = new THREE.Vector2(1, 1);
     const bakeTargets = VARIANT_PHASES.map(() => createBakeTarget());
+    // Palette position (t) per cell, re-dithered for coarse cells.
+    const positionTarget = createBakeTarget();
+    const paletteColors = Array.from({ length: MAX_PALETTE_STOPS }, (_, i) =>
+      toVector(resolved.colors[i]),
+    );
+    const paletteStops = Array.from(
+      { length: MAX_PALETTE_STOPS },
+      (_, i) => resolved.positions[i] ?? 1,
+    );
 
     const bakeMaterial = new THREE.ShaderMaterial({
       vertexShader: DITHER_VERTEX_SHADER,
@@ -159,26 +172,18 @@ export function useDitherScene(
         uFrame: {
           value: new THREE.Vector4(frame.x, frame.y, frame.width, frame.height),
         },
-        uColors: {
-          value: Array.from({ length: MAX_PALETTE_STOPS }, (_, i) =>
-            toVector(resolved.colors[i]),
-          ),
-        },
-        uStops: {
-          value: Array.from(
-            { length: MAX_PALETTE_STOPS },
-            (_, i) => resolved.positions[i] ?? 1,
-          ),
-        },
+        uColors: { value: paletteColors },
+        uStops: { value: paletteStops },
         uStopCount: { value: resolved.colors.length },
-        uPixelSize: { value: pixelSize / FIGMA_RENDER_SCALE },
-        uSubsamples: { value: SUBSAMPLES_AT_1X },
+        uPixelSize: { value: 1 },
+        uSubsamples: { value: 1 },
         uOffset: { value: offset },
         uScatter: { value: scatter },
         uSeed: { value: 0 },
         uPhase: { value: new THREE.Vector2() },
         uQuantize: { value: QUANTIZE_MODE[quantize] },
         uLevels: { value: levels },
+        uOutputT: { value: 0 },
       },
       depthTest: false,
       depthWrite: false,
@@ -199,15 +204,21 @@ export function useDitherScene(
         uBake0: { value: bakeTargets[0].texture },
         uBake1: { value: bakeTargets[1].texture },
         uBake2: { value: bakeTargets[2].texture },
+        uPosition: { value: positionTarget.texture },
         uBayer: { value: bayerTexture },
         uResolution: { value: resolution },
+        uCell: { value: 1 },
+        uColors: { value: paletteColors },
+        uStops: { value: paletteStops },
+        uStopCount: { value: resolved.colors.length },
         uOpacity: { value: opacity },
         uTime: { value: 0 },
         uLive: { value: continuous ? 1 : 0 },
         uBoil: { value: MOTION.boil },
         uSwap: { value: MOTION.swap },
-        uBlockSwap: { value: MOTION.blockSwap },
-        uBlock: { value: MOTION.block },
+        uWindSpeed: { value: MOTION.windSpeed },
+        uWindStrength: { value: MOTION.windStrength },
+        uWindScale: { value: MOTION.windScale },
         uMouseRadius: { value: 0.22 },
       },
       blending: THREE.NoBlending,
@@ -221,12 +232,18 @@ export function useDitherScene(
     presentScene.add(new THREE.Mesh(geometry, presentMaterial));
 
     const bake = () => {
+      const uniforms = bakeMaterial.uniforms;
       bakeTargets.forEach((target, index) => {
-        bakeMaterial.uniforms.uSeed.value = index;
-        bakeMaterial.uniforms.uPhase.value.set(...VARIANT_PHASES[index]);
+        uniforms.uSeed.value = index;
+        uniforms.uPhase.value.set(...VARIANT_PHASES[index]);
         renderer.setRenderTarget(target);
         renderer.render(bakeScene, camera);
       });
+      uniforms.uSeed.value = 0;
+      uniforms.uOutputT.value = 1;
+      renderer.setRenderTarget(positionTarget);
+      renderer.render(bakeScene, camera);
+      uniforms.uOutputT.value = 0;
       renderer.setRenderTarget(null);
     };
 
@@ -266,18 +283,17 @@ export function useDitherScene(
       renderer.setSize(width, height, false);
       renderer.getDrawingBufferSize(drawingBuffer);
       resolution.copy(drawingBuffer);
-      bakeTargets.forEach((target) =>
+      [...bakeTargets, positionTarget].forEach((target) =>
         target.setSize(drawingBuffer.x, drawingBuffer.y),
       );
 
-      const pixelRatio = renderer.getPixelRatio();
-      bakeMaterial.uniforms.uPixelSize.value =
-        (pixelSize * pixelRatio) / FIGMA_RENDER_SCALE;
-      bakeMaterial.uniforms.uSubsamples.value = Math.max(
-        1,
-        Math.round(SUBSAMPLES_AT_1X / pixelRatio),
+      const { cell, subsamples } = ditherCellSize(
+        pixelSize,
+        renderer.getPixelRatio(),
       );
-      presentMaterial.uniforms.uBlock.value = MOTION.block * pixelRatio;
+      bakeMaterial.uniforms.uPixelSize.value = cell;
+      bakeMaterial.uniforms.uSubsamples.value = subsamples;
+      presentMaterial.uniforms.uCell.value = Math.max(cell, 1);
       if (loaded) {
         bake();
         present();
@@ -331,7 +347,7 @@ export function useDitherScene(
       geometry.dispose();
       bakeMaterial.dispose();
       presentMaterial.dispose();
-      bakeTargets.forEach((target) => target.dispose());
+      [...bakeTargets, positionTarget].forEach((target) => target.dispose());
       bayerTexture.dispose();
       imageTexture?.dispose();
       renderer.dispose();
