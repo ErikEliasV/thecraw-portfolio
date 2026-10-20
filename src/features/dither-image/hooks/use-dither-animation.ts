@@ -8,7 +8,7 @@ import { EASE, gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 const ENTRY_COARSE = 8;
 const SCROLL_COARSE = 6;
 
-/** GSAP-driven uniforms: entry reveal, scroll coarsening and cursor response. */
+/** GSAP-driven uniforms: entry reveal, scroll coarsening and cursor lens. */
 export function useDitherAnimation(
   containerRef: RefObject<HTMLDivElement | null>,
   uniformsRef: RefObject<DitherUniforms | null>,
@@ -61,22 +61,7 @@ export function useDitherAnimation(
           },
         },
       );
-      gsap.fromTo(
-        uniforms.uDensity,
-        { value: 0 },
-        {
-          value: leaving ? 0.18 : 0,
-          ease: "power2.in",
-          scrollTrigger: {
-            trigger: container,
-            start: "top top",
-            end: "bottom top",
-            scrub: 0.6,
-          },
-        },
-      );
-
-      // Cursor: a softer, coarser region follows the pointer (desktop only).
+      // Cursor: a lens of coarser cells follows the pointer (desktop only).
       if (!window.matchMedia("(pointer: fine)").matches) return;
       const mouse = uniforms.uMouse.value;
       const moveX = gsap.quickTo(mouse, "x", { duration: 0.8, ease: EASE.out });
