@@ -34,6 +34,8 @@ export const DITHER_BAKE_FRAGMENT_SHADER = /* glsl */ `
   uniform vec2 uPhase;
   uniform int uQuantize;
   uniform float uLevels;
+  // 1.0: write the palette position (t) instead of the color.
+  uniform float uOutputT;
 
   float hash(vec2 p) {
     vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -86,7 +88,12 @@ export const DITHER_BAKE_FRAGMENT_SHADER = /* glsl */ `
     vec2 cell = floor(px / sampleCell);
     vec3 source = texture2D(uImage, clamp(frameUv((cell + 0.5) * sampleCell / uResolution), 0.0, 1.0)).rgb;
     float scatter = (hash(cell + uSeed * 37.0) - 0.5) * uScatter;
-    vec3 color = gradientMap(clamp(figmaLuma(source) + scatter - uOffset, 0.0, 1.0));
+    float t = clamp(figmaLuma(source) + scatter - uOffset, 0.0, 1.0);
+    if (uOutputT > 0.5) {
+      gl_FragColor = vec4(t, 0.0, 0.0, 1.0);
+      return;
+    }
+    vec3 color = gradientMap(t);
 
     float steps = uLevels - 1.0;
     if (uQuantize == 2) {
