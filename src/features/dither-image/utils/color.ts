@@ -22,3 +22,12 @@ export function quantizeChannel(
   const biased = mode === "ordered" ? value + (threshold - 0.5) / steps : value;
   return Math.min(1, Math.max(0, Math.floor(biased * steps + 0.5) / steps));
 }
+
+/**
+ * Figma rasterizes effects at 1.25x and downsamples: a "pixel size 1" cell is
+ * 0.8 CSS px. Measured against a 1:1 Figma render of the hero.
+ */
+export const FIGMA_RENDER_SCALE = 1.25;
+
+/** Ordered-dither subsamples per axis on a 1x screen (halved on 2x). */
+export const SUBSAMPLES_AT_1X = 4;
