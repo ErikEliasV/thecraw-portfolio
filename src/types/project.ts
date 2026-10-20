@@ -1,5 +1,8 @@
+export type Discipline = "brand" | "motion" | "product";
+
 export type Project = {
   slug: string;
+  discipline: Discipline;
   /** Short name used on cards ("Allce"). */
   name: string;
   /** Headline used on the featured slider and project page. */

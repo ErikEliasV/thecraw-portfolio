@@ -1,9 +1,10 @@
-import type { Project } from "@/types/project";
+import type { Discipline, Project } from "@/types/project";
 
 /** The Figma uses one placeholder project everywhere. */
 export const PROJECTS: readonly Project[] = [
   {
     slug: "allce",
+    discipline: "brand",
     name: "Allce",
     title: "Project Name",
     client: "Allce. Co",
@@ -39,3 +40,19 @@ export const CAROUSEL_PROJECTS: readonly Project[] = [
 export function getProjectHref(project: Project) {
   return `/work/${project.slug}`;
 }
+
+/** Work page grid: five cards in the Figma. */
+export const WORK_PROJECTS: readonly Project[] = Array.from(
+  { length: 5 },
+  () => FEATURED_PROJECT,
+);
+
+export const DISCIPLINE_FILTERS: readonly {
+  id: Discipline;
+  label: string;
+  className: string;
+}[] = [
+  { id: "brand", label: "Brand", className: "bg-red-graw" },
+  { id: "motion", label: "Motion & 3D", className: "bg-yellow" },
+  { id: "product", label: "Product", className: "bg-orange" },
+];
