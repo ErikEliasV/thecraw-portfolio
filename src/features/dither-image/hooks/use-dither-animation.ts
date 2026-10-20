@@ -71,21 +71,33 @@ export function useDitherAnimation(
         ease: EASE.out,
       });
 
-      const onPointerMove = (event: PointerEvent) => {
+      // Last pointer position: the lens follows it on scroll as well.
+      let pointer: { x: number; y: number } | null = null;
+      const track = () => {
+        if (!pointer) return;
         const rect = container.getBoundingClientRect();
-        const x = (event.clientX - rect.left) / rect.width;
-        const y = (event.clientY - rect.top) / rect.height;
+        const x = (pointer.x - rect.left) / rect.width;
+        const y = (pointer.y - rect.top) / rect.height;
         const inside = x >= 0 && x <= 1 && y >= 0 && y <= 1;
         moveX(x);
         moveY(y);
         strength(inside ? 1 : 0);
       };
-      const onPointerLeave = () => strength(0);
+      const onPointerMove = (event: PointerEvent) => {
+        pointer = { x: event.clientX, y: event.clientY };
+        track();
+      };
+      const onPointerLeave = () => {
+        pointer = null;
+        strength(0);
+      };
 
       window.addEventListener("pointermove", onPointerMove, { passive: true });
+      window.addEventListener("scroll", track, { passive: true });
       document.documentElement.addEventListener("pointerleave", onPointerLeave);
       return () => {
         window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("scroll", track);
         document.documentElement.removeEventListener(
           "pointerleave",
           onPointerLeave,
