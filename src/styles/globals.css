@@ -107,6 +107,9 @@
   --text-md: max(1rem, calc(var(--fluid) * 24.577));
   --text-md--line-height: 1.2;
   --text-md--letter-spacing: -0.07em;
+  --text-cta: max(1rem, calc(var(--fluid) * 23.281));
+  --text-cta--line-height: 1.2;
+  --text-cta--letter-spacing: -0.07em;
   --text-body: max(1rem, calc(var(--fluid) * 24));
   --text-body--line-height: 1;
   --text-meta: max(0.875rem, calc(var(--fluid) * 21.864));
