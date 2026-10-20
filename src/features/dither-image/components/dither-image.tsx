@@ -25,8 +25,9 @@ const DitherFallback = dynamic(
 );
 
 /**
- * Image rendered through the Figma gradient map + ordered dither. Animated in
- * WebGL; a static 2D-canvas render is used without WebGL2 or with reduced motion.
+ * Image rendered through the Figma gradient map + quantization effects, in
+ * constant motion in WebGL; a static 2D-canvas render is used without WebGL2
+ * or with reduced motion.
  * Fills its positioned parent, whose background shows until the image forms.
  */
 export function DitherImage({
@@ -37,6 +38,8 @@ export function DitherImage({
   opacity = 1,
   offset = 0,
   scatter = 0,
+  quantize = "ordered",
+  levels = 3,
   frame = FULL_FRAME,
   mobileFrame = frame,
   animation = "intro",
@@ -52,6 +55,8 @@ export function DitherImage({
     opacity,
     offset,
     scatter,
+    quantize,
+    levels,
     frame: desktop ? frame : mobileFrame,
   };
 
