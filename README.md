@@ -16,3 +16,11 @@ Site estático em Next.js (App Router), Tailwind CSS, Three.js, GSAP e Lenis.
 
 `npm run build` gera a pasta `out/`, com um `index.html` por rota (`trailingSlash: true`).
 Basta publicar essa pasta em qualquer host de arquivos estáticos.
+
+### GitHub Pages
+
+O workflow `.github/workflows/deploy-pages.yml` publica a cada push na `main`. Ele roda lint,
+tipos e build com `NEXT_PUBLIC_BASE_PATH` igual ao subcaminho do Pages (`/thecraw-portfolio`).
+Caminhos de `public/` usados no código passam por `asset()` (`src/utils/asset.ts`) para receber esse prefixo.
+
+Na primeira vez, ative em **Settings → Pages → Build and deployment → Source: GitHub Actions**.
