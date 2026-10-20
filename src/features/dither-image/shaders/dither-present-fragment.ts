@@ -1,30 +1,23 @@
 import { BAYER_SIZE } from "@/features/dither-image/utils/bayer";
-import { MAX_PALETTE_STOPS } from "@/features/dither-image/utils/palette";
 
 /**
  * Present pass, every frame: shows the baked Figma look and animates it with
  * the effect's own pixels.
  * - Wind: gusts drift to the right and blow dither cells along with them; in
  *   calm air a few cells still hop. Cells flicker between baked variants.
- * - Coarse cells (entry, scroll, cursor lens) re-dither the palette position
- *   with big Bayer pixels between neighbouring palette colors only (lighter
- *   under the cursor), like the first version of the effect.
+ * - Coarse cells (entry, scroll, cursor lens) enlarge the effect's own pixels:
+ *   the bake is sampled once per bigger cell, so no new color appears.
  * Premultiplied output.
  */
 export const DITHER_PRESENT_FRAGMENT_SHADER = /* glsl */ `
   #define BAYER_SIZE ${BAYER_SIZE}.0
-  #define MAX_STOPS ${MAX_PALETTE_STOPS}
 
   uniform sampler2D uBake0;
   uniform sampler2D uBake1;
   uniform sampler2D uBake2;
-  uniform sampler2D uPosition;
   uniform sampler2D uBayer;
   uniform vec2 uResolution;
   uniform float uCell;
-  uniform vec3 uColors[MAX_STOPS];
-  uniform float uStops[MAX_STOPS];
-  uniform int uStopCount;
 
   uniform float uOpacity;
   uniform float uTime;
@@ -63,20 +56,6 @@ export const DITHER_PRESENT_FRAGMENT_SHADER = /* glsl */ `
     return texture2D(uBayer, (mod(cell, BAYER_SIZE) + 0.5) / BAYER_SIZE).r;
   }
 
-  vec3 paletteDither(float t, float threshold) {
-    if (t <= uStops[0]) return uColors[0];
-    for (int i = 0; i < MAX_STOPS - 1; i++) {
-      if (i >= uStopCount - 1) break;
-      float start = uStops[i];
-      float end = uStops[i + 1];
-      if (t <= end) {
-        float fraction = (t - start) / max(end - start, 1e-5);
-        return fraction > threshold ? uColors[i + 1] : uColors[i];
-      }
-    }
-    return uColors[uStopCount - 1];
-  }
-
   vec2 bakeUv(vec2 px) {
     vec2 uv = clamp(px / uResolution, 0.0, 1.0);
     return vec2(uv.x, 1.0 - uv.y);
@@ -104,26 +83,20 @@ export const DITHER_PRESENT_FRAGMENT_SHADER = /* glsl */ `
     vec2 px = fragPx - vec2(blown * uCell, 0.0);
 
     float coarse = uEntryCoarse * uScrollCoarse * floor(1.0 + hover * 3.0 + 0.5);
-    vec3 color;
-    if (coarse > 1.01) {
-      // Big Bayer pixels in palette colors only (lighter under the cursor).
-      float big = max(1.0, floor(uCell * coarse + 0.5));
-      vec2 bigCell = floor(px / big);
-      float t = texture2D(uPosition, bakeUv((bigCell + 0.5) * big)).r - hover * 0.3;
-      color = paletteDither(clamp(t, 0.0, 1.0), bayer(bigCell));
-    } else {
-      vec2 sampleCell = floor(px / uCell);
-      vec2 uv = bakeUv((sampleCell + 0.5) * uCell);
-      float roll = hash(sampleCell + tick * 4.13) * step(0.5, uLive);
-      float boil = uBoil + gust * 0.35;
-      color = texture2D(uBake0, uv).rgb;
-      if (roll > 1.0 - boil) {
-        color = roll > 1.0 - boil * 0.5 ? texture2D(uBake2, uv).rgb : texture2D(uBake1, uv).rgb;
-      }
+    float size = max(uCell, floor(uCell * coarse + 0.5));
+    vec2 sampleCell = floor(px / size);
+    vec2 uv = bakeUv((sampleCell + 0.5) * size);
+
+    // Each cell flickers between the baked variants of the effect.
+    float roll = hash(sampleCell + tick * 4.13) * step(0.5, uLive);
+    float boil = uBoil + gust * 0.35;
+    vec3 color = texture2D(uBake0, uv).rgb;
+    if (roll > 1.0 - boil) {
+      color = roll > 1.0 - boil * 0.5 ? texture2D(uBake2, uv).rgb : texture2D(uBake1, uv).rgb;
     }
 
     // Cells materialize in Bayer order as uReveal rises.
-    float alpha = uOpacity * step(bayer(floor(fragPx / max(uCell * coarse, 1.0))), uReveal);
+    float alpha = uOpacity * step(bayer(floor(fragPx / size)), uReveal);
     gl_FragColor = vec4(color * alpha, alpha);
   }
 `;

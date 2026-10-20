@@ -151,8 +151,6 @@ export function useDitherScene(
       new THREE.Vector3(...(rgb ?? [0, 0, 0]));
     const resolution = new THREE.Vector2(1, 1);
     const bakeTargets = VARIANT_PHASES.map(() => createBakeTarget());
-    // Palette position (t) per cell, re-dithered for coarse cells.
-    const positionTarget = createBakeTarget();
     const paletteColors = Array.from({ length: MAX_PALETTE_STOPS }, (_, i) =>
       toVector(resolved.colors[i]),
     );
@@ -183,7 +181,6 @@ export function useDitherScene(
         uPhase: { value: new THREE.Vector2() },
         uQuantize: { value: QUANTIZE_MODE[quantize] },
         uLevels: { value: levels },
-        uOutputT: { value: 0 },
       },
       depthTest: false,
       depthWrite: false,
@@ -204,13 +201,9 @@ export function useDitherScene(
         uBake0: { value: bakeTargets[0].texture },
         uBake1: { value: bakeTargets[1].texture },
         uBake2: { value: bakeTargets[2].texture },
-        uPosition: { value: positionTarget.texture },
         uBayer: { value: bayerTexture },
         uResolution: { value: resolution },
         uCell: { value: 1 },
-        uColors: { value: paletteColors },
-        uStops: { value: paletteStops },
-        uStopCount: { value: resolved.colors.length },
         uOpacity: { value: opacity },
         uTime: { value: 0 },
         uLive: { value: continuous ? 1 : 0 },
@@ -239,11 +232,6 @@ export function useDitherScene(
         renderer.setRenderTarget(target);
         renderer.render(bakeScene, camera);
       });
-      uniforms.uSeed.value = 0;
-      uniforms.uOutputT.value = 1;
-      renderer.setRenderTarget(positionTarget);
-      renderer.render(bakeScene, camera);
-      uniforms.uOutputT.value = 0;
       renderer.setRenderTarget(null);
     };
 
@@ -283,7 +271,7 @@ export function useDitherScene(
       renderer.setSize(width, height, false);
       renderer.getDrawingBufferSize(drawingBuffer);
       resolution.copy(drawingBuffer);
-      [...bakeTargets, positionTarget].forEach((target) =>
+      bakeTargets.forEach((target) =>
         target.setSize(drawingBuffer.x, drawingBuffer.y),
       );
 
@@ -347,7 +335,7 @@ export function useDitherScene(
       geometry.dispose();
       bakeMaterial.dispose();
       presentMaterial.dispose();
-      [...bakeTargets, positionTarget].forEach((target) => target.dispose());
+      bakeTargets.forEach((target) => target.dispose());
       bayerTexture.dispose();
       imageTexture?.dispose();
       renderer.dispose();
