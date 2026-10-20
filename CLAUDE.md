@@ -34,7 +34,7 @@ Estas regras valem para todas as sessões. Siga-as sem exceção.
 
 - WebGL com **Three.js** e shader próprio, **visualmente idêntico ao Figma**: o shader reproduz a pilha de efeitos do Figma (gradient map com luminância calculada como o Figma faz — textura lida como linear e convertida para sRGB — e depois "Dither": quantização por canal com Bayer 16x16, ou "Pixelate": posterize por canal). Validado contra as capturas do Figma (cor média idêntica).
 - Paleta: os stops do gradient map do Figma, na mesma ordem e proporção.
-- **Movimento constante** em toda a imagem (não só no mouse): campo de fluxo, ondas de luz nos tons, padrão Bayer em deslocamento e grão renovado.
+- **Movimento constante só com os pixels do próprio efeito**: o visual do Figma é renderizado uma vez (bake, com escala de rasterização 1,25× do Figma e supersampling) em 3 variações do mesmo efeito; a cada quadro os pixels alternam entre essas variações e trocam de lugar, sozinhos ou em blocos, de forma aleatória. Nunca criar cores fora do efeito (sem pixels brancos, sem misturas de cor).
 - Tamanho do "pixel" configurável por uniform, nítido (sem suavização).
 - GSAP controlando os uniforms:
   - Entrada: a imagem se forma a partir do dither (limiar subindo, "materializando").
