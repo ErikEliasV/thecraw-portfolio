@@ -1,18 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { RollText } from "@/components/ui/roll-text";
+import { FOOTER_DITHER } from "@/constants/dither";
 import { FOOTER_LINKS } from "@/constants/navigation";
 import { STUDIO_INFO } from "@/constants/studio";
-
-type FooterProps = {
-  /** Decorative layer rendered behind the content (dither image). */
-  background?: ReactNode;
-};
+import { DitherImage } from "@/features/dither-image";
 
 const LINK_POSITION = ["lg:left-886", "lg:left-1522"] as const;
 
-export function Footer({ background }: FooterProps) {
+/** Figma "Footer" (937px): dithered figure behind the studio details. */
+export function Footer() {
   const [emailUser, emailDomain] = STUDIO_INFO.email.split("@");
 
   return (
@@ -20,7 +17,7 @@ export function Footer({ background }: FooterProps) {
       data-header-theme="light"
       className="relative overflow-hidden bg-red-graw text-white-graw lg:h-937"
     >
-      {background}
+      <DitherImage {...FOOTER_DITHER} animation="scroll" />
       <div className="relative flex flex-col gap-48 px-16 pt-96 pb-64 lg:static lg:block lg:p-0">
         <Image
           src="/icons/logo-the-craw-wordmark.svg"

@@ -37,6 +37,7 @@ export const FOOTER_DITHER: DitherPreset = {
   levels: 16,
   // Image rectangle 1920×3227 at (0, -297) in the 1920×937 frame.
   frame: { x: 0, y: -0.31697, width: 1, height: 3.44397 },
+  mobileFrame: COVER_FRAME,
 };
 
 /** Figma "Studio" hero: image at 14% over BLACK GRAW, offset −15%, scatter 50%. */
