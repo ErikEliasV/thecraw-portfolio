@@ -10,3 +10,22 @@ export const WORK_PAGE = {
   intro: { heading: "Proposito", body: LOREM_SHORT },
   filterLabel: "Filter",
 } as const;
+
+export const PROJECT_PAGE = {
+  solution: "Solution",
+  process: "process",
+  results: "results",
+  resultsBody:
+    "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since 1966, when designers at Letraset and James Mosley, the librarian at St Bride Printing Library in London, took a 1914 Cicero translation and scrambled it to make dummy text for Letraset's Body Type sheets. It has survived not only many",
+  credits: [
+    [
+      { label: "Project director", value: "André Gonçalves" },
+      { label: "Client", value: "Allce. Co" },
+    ],
+    [
+      { label: "Motion Designer", value: "Alan Erick" },
+      { label: "Date", value: "2024" },
+    ],
+  ],
+  end: "END",
+} as const;
