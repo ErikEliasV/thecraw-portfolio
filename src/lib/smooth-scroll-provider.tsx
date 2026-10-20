@@ -60,5 +60,16 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
     ScrollTrigger.refresh();
   }, [pathname]);
 
+  // Web fonts change text metrics: recompute trigger positions once loaded.
+  useEffect(() => {
+    let active = true;
+    document.fonts.ready.then(() => {
+      if (active) ScrollTrigger.refresh();
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return children;
 }
