@@ -32,8 +32,9 @@ Estas regras valem para todas as sessões. Siga-as sem exceção.
 
 ## 3. Efeito dither (hero e footer)
 
-- WebGL com **Three.js** e shader próprio. Fragment shader com **ordered dithering** (Bayer 16x16, igual ao Figma): luminância → comparação com o limiar da matriz → cor da paleta.
-- Paleta do dither: **somente cores extraídas do Figma**, na mesma ordem e proporção do exemplo.
+- WebGL com **Three.js** e shader próprio, **visualmente idêntico ao Figma**: o shader reproduz a pilha de efeitos do Figma (gradient map com luminância calculada como o Figma faz — textura lida como linear e convertida para sRGB — e depois "Dither": quantização por canal com Bayer 16x16, ou "Pixelate": posterize por canal). Validado contra as capturas do Figma (cor média idêntica).
+- Paleta: os stops do gradient map do Figma, na mesma ordem e proporção.
+- **Movimento constante** em toda a imagem (não só no mouse): campo de fluxo, ondas de luz nos tons, padrão Bayer em deslocamento e grão renovado.
 - Tamanho do "pixel" configurável por uniform, nítido (sem suavização).
 - GSAP controlando os uniforms:
   - Entrada: a imagem se forma a partir do dither (limiar subindo, "materializando").
