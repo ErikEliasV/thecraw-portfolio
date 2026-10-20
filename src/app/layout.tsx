@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Header } from "@/components/layout/header";
+import { SkipLink } from "@/components/layout/skip-link";
 import { SITE_CONFIG } from "@/constants/site";
 import { seagram, sfPro } from "@/lib/fonts";
 import { SmoothScrollProvider } from "@/lib/smooth-scroll-provider";
@@ -20,7 +22,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${sfPro.variable} ${seagram.variable}`}
     >
       <body className="overflow-x-clip bg-white-graw font-sans text-black-graw antialiased">
-        <SmoothScrollProvider>{children}</SmoothScrollProvider>
+        <SmoothScrollProvider>
+          <SkipLink />
+          <Header />
+          {children}
+        </SmoothScrollProvider>
       </body>
     </html>
   );
