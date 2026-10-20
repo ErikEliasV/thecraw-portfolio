@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { SITE_CONFIG } from "@/constants/site";
+import { seagram, sfPro } from "@/lib/fonts";
 import "@/styles/globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -19,8 +13,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang={SITE_CONFIG.locale} className={inter.variable}>
-      <body className="bg-white-graw font-sans text-black-graw antialiased">
+    <html
+      lang={SITE_CONFIG.locale}
+      className={`${sfPro.variable} ${seagram.variable}`}
+    >
+      <body className="overflow-x-clip bg-white-graw font-sans text-black-graw antialiased">
         {children}
       </body>
     </html>
