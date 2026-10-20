@@ -47,8 +47,16 @@ export function SplitReveal({
             type: split === "lines" ? "lines" : `lines,${split}`,
             mask: "lines",
             autoSplit: true,
-            onSplit: (self) =>
-              gsap.from(self[split], {
+            onSplit: (self) => {
+              // Tight Figma line-heights: give masks room for ascenders and
+              // descenders without moving the lines.
+              gsap.set(self.masks, {
+                paddingTop: "0.12em",
+                paddingBottom: "0.18em",
+                marginTop: "-0.12em",
+                marginBottom: "-0.18em",
+              });
+              return gsap.from(self[split], {
                 yPercent: 110,
                 duration: split === "chars" ? 1.1 : 1,
                 ease: EASE.expo,
@@ -58,7 +66,8 @@ export function SplitReveal({
                   trigger === "scroll"
                     ? { trigger: element, start: "top 88%", once: true }
                     : undefined,
-              }),
+              });
+            },
           });
           return () => instance.revert();
         },
