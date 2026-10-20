@@ -36,21 +36,19 @@ export function resolvePalette(palette: DitherPalette): ResolvedPalette {
   };
 }
 
-/** Ordered dither between the two palette stops around `t`. Mirrors the shader. */
-export function ditherPalette(
-  palette: ResolvedPalette,
-  t: number,
-  threshold: number,
-): RGB {
+/** Figma "Gradient map" ramp, mixed in sRGB. Mirrors `gradientMap` in the shader. */
+export function gradientMap(palette: ResolvedPalette, t: number): RGB {
   const { colors, positions } = palette;
   if (t <= positions[0]) return colors[0];
 
   for (let i = 0; i < positions.length - 1; i++) {
-    const start = positions[i];
     const end = positions[i + 1];
     if (t <= end) {
-      const fraction = (t - start) / Math.max(end - start, 1e-5);
-      return fraction > threshold ? colors[i + 1] : colors[i];
+      const start = positions[i];
+      const f = (t - start) / Math.max(end - start, 1e-5);
+      const [r0, g0, b0] = colors[i];
+      const [r1, g1, b1] = colors[i + 1];
+      return [r0 + (r1 - r0) * f, g0 + (g1 - g0) * f, b0 + (b1 - b0) * f];
     }
   }
   return colors[colors.length - 1];
