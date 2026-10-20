@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { DITHER_BAKE_FRAGMENT_SHADER } from "@/features/dither-image/shaders/dither-bake-fragment";
 import { DITHER_PRESENT_FRAGMENT_SHADER } from "@/features/dither-image/shaders/dither-present-fragment";
@@ -101,6 +101,8 @@ function createBakeTarget() {
  * once per size (bake pass); every frame a light pass animates it. Handles
  * texture loading, resize, DPR cap, pausing off-screen and full disposal.
  * A fresh canvas is created per mount, so a lost context is never reused.
+ * Returns the GSAP-driven uniforms of the current scene once its image is
+ * ready: a new object per scene, so animations rebind when it is rebuilt.
  */
 export function useDitherScene(
   containerRef: RefObject<HTMLDivElement | null>,
@@ -117,8 +119,11 @@ export function useDitherScene(
     continuous,
   }: DitherSceneOptions,
 ) {
-  const uniformsRef = useRef<DitherUniforms | null>(null);
-  const [ready, setReady] = useState(false);
+  const [uniforms, setUniforms] = useState<DitherUniforms | null>(null);
+  // Props from Server Components arrive as new objects on every navigation:
+  // compare them by value so an unchanged palette or frame keeps the scene.
+  const paletteKey = JSON.stringify(palette);
+  const frameKey = JSON.stringify(frame);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -146,7 +151,8 @@ export function useDitherScene(
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const geometry = new THREE.PlaneGeometry(2, 2);
     const bayerTexture = createBayerTexture();
-    const resolved = resolvePalette(palette);
+    const resolved = resolvePalette(JSON.parse(paletteKey) as DitherPalette);
+    const sceneFrame = JSON.parse(frameKey) as DitherFrame;
     const toVector = (rgb: readonly number[] | undefined) =>
       new THREE.Vector3(...(rgb ?? [0, 0, 0]));
     const resolution = new THREE.Vector2(1, 1);
@@ -168,7 +174,12 @@ export function useDitherScene(
         uResolution: { value: resolution },
         uImageSize: { value: new THREE.Vector2(1, 1) },
         uFrame: {
-          value: new THREE.Vector4(frame.x, frame.y, frame.width, frame.height),
+          value: new THREE.Vector4(
+            sceneFrame.x,
+            sceneFrame.y,
+            sceneFrame.width,
+            sceneFrame.height,
+          ),
         },
         uColors: { value: paletteColors },
         uStops: { value: paletteStops },
@@ -316,11 +327,10 @@ export function useDitherScene(
         bakeMaterial.uniforms.uImageSize.value.set(image.width, image.height);
         imageTexture = texture;
         loaded = true;
-        uniformsRef.current = animated;
         bake();
         present();
         updateLoop();
-        setReady(true);
+        setUniforms(animated);
       })
       .catch(() => {
         // Leave the container background visible if the image fails.
@@ -331,7 +341,6 @@ export function useDitherScene(
       gsap.ticker.remove(tick);
       resizeObserver.disconnect();
       intersectionObserver.disconnect();
-      uniformsRef.current = null;
       geometry.dispose();
       bakeMaterial.dispose();
       presentMaterial.dispose();
@@ -341,21 +350,21 @@ export function useDitherScene(
       renderer.dispose();
       renderer.forceContextLoss();
       canvas.remove();
-      setReady(false);
+      setUniforms(null);
     };
   }, [
     containerRef,
     src,
-    palette,
+    paletteKey,
     pixelSize,
     opacity,
     offset,
     scatter,
     quantize,
     levels,
-    frame,
+    frameKey,
     continuous,
   ]);
 
-  return { uniformsRef, ready };
+  return uniforms;
 }

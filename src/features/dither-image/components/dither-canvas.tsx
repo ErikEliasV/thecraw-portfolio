@@ -28,12 +28,12 @@ export function DitherCanvas({
   ...sceneOptions
 }: DitherCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { uniformsRef, ready } = useDitherScene(containerRef, {
+  const uniforms = useDitherScene(containerRef, {
     ...sceneOptions,
     continuous: animation !== "none",
   });
 
-  useDitherAnimation(containerRef, uniformsRef, ready, animation);
+  useDitherAnimation(containerRef, uniforms, animation);
 
   return <div ref={containerRef} className="absolute inset-0" />;
 }
