@@ -86,7 +86,9 @@ export const DITHER_FRAGMENT_SHADER = /* glsl */ `
     vec2 toMouse = (screenUv - uMouse) * vec2(uResolution.x / uResolution.y, 1.0);
     float hover = uMouseStrength * smoothstep(uMouseRadius, 0.0, length(toMouse));
 
-    float pixel = max(1.0, uPixelSize * uEntryCoarse * uScrollCoarse * (1.0 + hover * 3.0));
+    // Whole-pixel cells in discrete hover steps keep the grid crisp (no rings).
+    float hoverScale = floor(1.0 + hover * 3.0 + 0.5);
+    float pixel = max(1.0, floor(uPixelSize * uEntryCoarse * uScrollCoarse * hoverScale + 0.5));
     vec2 cell = floor(fragPx / pixel);
     vec2 cellUv = (cell + 0.5) * pixel / uResolution;
 
