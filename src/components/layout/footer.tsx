@@ -21,8 +21,8 @@ export function Footer() {
       <DitherImage {...FOOTER_DITHER} animation="scroll" />
       <div className="relative flex flex-col gap-48 px-16 pt-96 pb-64 lg:static lg:block lg:p-0">
         <Image
-          src={asset("/icons/logo-the-craw-wordmark.svg")}
-          alt="The Craw"
+          src={asset("/icons/logo-the-graw-wordmark.svg")}
+          alt="The Graw"
           width={174}
           height={31}
           className="h-auto w-140 lg:absolute lg:top-24 lg:left-134 lg:w-174"
