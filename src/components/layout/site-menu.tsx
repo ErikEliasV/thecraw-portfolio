@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, type KeyboardEvent, type RefObject } from "react";
 import { RollText } from "@/components/ui/roll-text";
 import { MENU_VISUAL, NAV_LINKS } from "@/constants/navigation";
+import { useMenuKnockout } from "@/hooks/use-menu-knockout";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { DURATION, EASE, gsap, useGSAP } from "@/lib/gsap";
 import { getLenis } from "@/lib/smooth-scroll-provider";
@@ -105,6 +106,7 @@ export function SiteMenu({ open, onClose, returnFocusRef }: SiteMenuProps) {
   const reducedMotion = useReducedMotion();
   const pathname = usePathname();
   const { contextSafe } = useGSAP({ scope: rootRef });
+  useMenuKnockout(rootRef, open);
 
   useEffect(() => {
     if (open === wasOpenRef.current) return;
@@ -218,7 +220,7 @@ export function SiteMenu({ open, onClose, returnFocusRef }: SiteMenuProps) {
                   <span className="block overflow-hidden pr-8">
                     <span
                       data-menu-link
-                      className="block text-display text-[color:var(--menu-link-tint,var(--color-menu-link))] transition-colors duration-300 ease-power3 will-change-transform group-hover:text-white/50 group-focus-visible:text-white/50"
+                      className="block text-display text-[color:var(--menu-link-tint,var(--color-menu-link))] transition-colors duration-300 ease-power3 will-change-transform group-data-knockout:text-transparent"
                     >
                       {link.label}
                     </span>
