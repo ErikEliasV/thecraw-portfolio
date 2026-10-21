@@ -17,6 +17,8 @@ const AUTOPLAY_DELAY = 5;
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 /** Layers that slide inside their own clip box, in entrance order. */
 const TRACKS = ["prev-thumb", "next-thumb", "meta", "title"] as const;
+/** How far a track waits or leaves, in %: past the room around its text. */
+const TRACK_SHIFT = 120;
 
 const wrap = (index: number) => (index + SLIDE_COUNT) % SLIDE_COUNT;
 
@@ -50,7 +52,7 @@ export function FeaturedProjectSection() {
       for (let slide = 1; slide < SLIDE_COUNT; slide++) {
         gsap.set(select("cover", slide), { visibility: "hidden" });
         TRACKS.forEach((track) =>
-          gsap.set(select(track, slide), { xPercent: 100 }),
+          gsap.set(select(track, slide), { xPercent: TRACK_SHIFT }),
         );
       }
 
@@ -104,12 +106,12 @@ export function FeaturedProjectSection() {
           transition
             ?.to(
               select(track, from),
-              { xPercent: -enter, duration: 0.7 },
+              { xPercent: -TRACK_SHIFT * direction, duration: 0.7 },
               order * 0.04,
             )
             .fromTo(
               select(track, to),
-              { xPercent: enter },
+              { xPercent: TRACK_SHIFT * direction },
               { xPercent: 0, duration: 1.1, ease: EASE.expo },
               0.3 + order * 0.06,
             );
@@ -219,8 +221,8 @@ export function FeaturedProjectSection() {
             </span>
           </button>
 
-          {/* Clip boxes get room for ascenders and descenders. */}
-          <div className="-my-[0.2em] grid overflow-hidden py-[0.2em] text-meta lg:absolute lg:top-[53.89%] lg:left-877">
+          {/* Clip boxes leave room around the glyphs (line height, tracking). */}
+          <div className="-m-[0.2em] grid overflow-hidden p-[0.2em] text-meta lg:absolute lg:top-[53.89%] lg:left-877">
             {FEATURED_SLIDES.map((item, slide) => (
               <p
                 key={slide}
@@ -234,7 +236,7 @@ export function FeaturedProjectSection() {
             ))}
           </div>
 
-          <div className="relative -my-[0.2em] grid overflow-hidden py-[0.2em] lg:absolute lg:top-[57.39%] lg:left-218">
+          <div className="relative -m-[0.2em] grid overflow-hidden p-[0.2em] lg:absolute lg:top-[57.39%] lg:left-218">
             {FEATURED_SLIDES.map((item, slide) => (
               <div
                 key={slide}

@@ -5,6 +5,7 @@ import { ArrowLink } from "@/components/ui/arrow-link";
 import { PROPOSAL_CTA, PROPOSAL_HREF, SERVICES } from "@/constants/services";
 import { EASE, gsap, ScrollTrigger, SplitText, useGSAP } from "@/lib/gsap";
 import { cn } from "@/utils/cn";
+import { MASK_ROOM } from "@/utils/mask-room";
 import { themeColor } from "@/utils/theme-color";
 
 /** Distance between the text block and the red box on each row (Figma). */
@@ -40,13 +41,7 @@ export function ServicesSection() {
             type: "lines,chars",
             mask: "lines",
           });
-          // Room in the line mask for the glyphs, without moving the line.
-          gsap.set(split.masks, {
-            paddingTop: "0.12em",
-            paddingBottom: "0.18em",
-            marginTop: "-0.12em",
-            marginBottom: "-0.18em",
-          });
+          gsap.set(split.masks, MASK_ROOM);
 
           // Rows wait for the title to land before they start.
           const waiting: gsap.core.Timeline[] = [];

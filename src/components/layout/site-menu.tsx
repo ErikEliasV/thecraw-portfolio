@@ -217,7 +217,7 @@ export function SiteMenu({ open, onClose, returnFocusRef }: SiteMenuProps) {
                       className="object-cover"
                     />
                   </span>
-                  <span className="block overflow-hidden pr-8">
+                  <span className="-ml-[0.06em] block overflow-hidden pr-8 pl-[0.06em]">
                     <span
                       data-menu-link
                       className="block text-display text-[color:var(--menu-link-tint,var(--color-menu-link))] transition-colors duration-300 ease-power3 will-change-transform group-data-knockout:text-transparent"
