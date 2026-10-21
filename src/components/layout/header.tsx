@@ -78,7 +78,7 @@ export function Header() {
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            aria-label="The Craw, página inicial"
+            aria-label="The Graw, página inicial"
             className="block"
           >
             <HeaderLogo />

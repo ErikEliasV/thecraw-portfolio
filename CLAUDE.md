@@ -1,4 +1,4 @@
-# The Craw: regras do projeto
+# The Graw: regras do projeto
 
 Estas regras valem para todas as sessões. Siga-as sem exceção.
 
@@ -16,7 +16,7 @@ Estas regras valem para todas as sessões. Siga-as sem exceção.
 - Assets (imagens, ícones, fontes) baixados para `public/`.
 - Telas **fiéis ao Figma**: layout, proporções, tipografia, espaçamentos e hierarquia, em desktop e mobile (seguir frames mobile se existirem; senão, adaptar mantendo a linguagem visual).
 - Se o Figma MCP não responder ou um frame não puder ser lido: **parar e avisar**, nunca inventar o visual.
-- Nome da marca: **THE CRAW** (o Figma escreve "THE GRAW"; nos logos, o "G" foi trocado pelo "C" da SF Pro Display). Os contatos (e-mail, @) seguem como estão no Figma.
+- Nome da marca: **THE GRAW**, como no Figma (logos com o "G" original). Os contatos (e-mail, @) seguem como estão no Figma.
 
 ### Escala e tipografia
 
