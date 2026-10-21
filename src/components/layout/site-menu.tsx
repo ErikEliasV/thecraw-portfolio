@@ -6,10 +6,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, type KeyboardEvent, type RefObject } from "react";
 import { RollText } from "@/components/ui/roll-text";
 import { MENU_VISUAL, NAV_LINKS } from "@/constants/navigation";
+import { useMenuKnockout } from "@/hooks/use-menu-knockout";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { DURATION, EASE, gsap, useGSAP } from "@/lib/gsap";
 import { getLenis } from "@/lib/smooth-scroll-provider";
-import { cn } from "@/utils/cn";
+import { themeColor } from "@/utils/theme-color";
 
 type SiteMenuProps = {
   open: boolean;
@@ -19,8 +20,8 @@ type SiteMenuProps = {
 
 const FOCUSABLE = "a[href], button:not([disabled])";
 const DESKTOP = "(min-width: 64rem)";
-/** Links from this index sit in the panel's right column. */
-const SECOND_COLUMN = 2;
+/** Words rise in red and settle into the link gray (hover still wins). */
+const LINK_TINT = "--menu-link-tint";
 
 // The panel wipes down with a slanted edge while its links straighten up
 // from a tilted zoom, and the blur veils the page behind it.
@@ -69,6 +70,17 @@ function buildMenuTimeline(root: HTMLElement, onClosed: () => void) {
       { yPercent: 120 },
       { yPercent: 0, duration: 1.5, ease: EASE.menuLinks, stagger: 0.05 },
       0.8,
+    )
+    .fromTo(
+      links,
+      { [LINK_TINT]: themeColor("red-graw") },
+      {
+        [LINK_TINT]: themeColor("menu-link"),
+        duration: 0.8,
+        ease: EASE.inOut,
+        stagger: 0.05,
+      },
+      1.5,
     );
   if (touch) {
     timeline.fromTo(
@@ -94,6 +106,7 @@ export function SiteMenu({ open, onClose, returnFocusRef }: SiteMenuProps) {
   const reducedMotion = useReducedMotion();
   const pathname = usePathname();
   const { contextSafe } = useGSAP({ scope: rootRef });
+  useMenuKnockout(rootRef, open);
 
   useEffect(() => {
     if (open === wasOpenRef.current) return;
@@ -180,51 +193,41 @@ export function SiteMenu({ open, onClose, returnFocusRef }: SiteMenuProps) {
           aria-label="Principal"
           className="lg:absolute lg:inset-0"
         >
-          <ul className="flex flex-col lg:absolute lg:top-146 lg:left-101 lg:grid lg:grid-flow-col lg:grid-cols-[calc(var(--spacing)*646.75)_auto] lg:grid-rows-2">
-            {NAV_LINKS.map((link, index) => {
-              // The right column has no room to push its words, so the
-              // thumbnail grows into the gutter on their left instead.
-              const intoGutter = index >= SECOND_COLUMN;
-              return (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    aria-current={pathname === link.href ? "page" : undefined}
-                    className={cn(
-                      "group relative -ml-5 flex items-center md:-ml-8",
-                      intoGutter && "lg:ml-0",
-                    )}
-                    onClick={onClose}
+          {/* The right column starts early enough for its words to be
+              pushed by the thumbnail like the left one, inside the panel. */}
+          <ul className="flex flex-col lg:absolute lg:top-146 lg:left-101 lg:grid lg:grid-flow-col lg:grid-cols-[calc(var(--spacing)*552)_auto] lg:grid-rows-2">
+            {NAV_LINKS.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  aria-current={pathname === link.href ? "page" : undefined}
+                  className="group relative -ml-5 flex items-center md:-ml-8"
+                  onClick={onClose}
+                >
+                  <span
+                    data-menu-visual
+                    aria-hidden
+                    className="relative mr-5 h-36 w-0 shrink-0 overflow-hidden rounded-[0.2rem] md:mr-8 md:h-46 md:rounded-[0.3rem] lg:h-112 lg:rounded-[calc(var(--spacing)*4.8)] lg:transition-[width] lg:duration-800 lg:ease-menu-visual lg:group-hover:w-168 lg:group-focus-visible:w-168"
                   >
+                    <Image
+                      src={MENU_VISUAL}
+                      alt=""
+                      fill
+                      sizes="(min-width: 64rem) 9vw, 67px"
+                      className="object-cover"
+                    />
+                  </span>
+                  <span className="-ml-[0.06em] block overflow-hidden pr-8 pl-[0.06em]">
                     <span
-                      data-menu-visual
-                      aria-hidden
-                      className={cn(
-                        "relative mr-5 h-36 w-0 shrink-0 overflow-hidden rounded-[0.2rem] md:mr-8 md:h-46 md:rounded-[0.3rem] lg:h-112 lg:rounded-[calc(var(--spacing)*4.8)] lg:transition-[width] lg:duration-800 lg:ease-menu-visual lg:group-hover:w-168 lg:group-focus-visible:w-168",
-                        intoGutter &&
-                          "lg:absolute lg:top-1/2 lg:right-full lg:-translate-y-1/2",
-                      )}
+                      data-menu-link
+                      className="block text-display text-[color:var(--menu-link-tint,var(--color-menu-link))] transition-colors duration-300 ease-power3 will-change-transform group-data-knockout:text-transparent"
                     >
-                      <Image
-                        src={MENU_VISUAL}
-                        alt=""
-                        fill
-                        sizes="(min-width: 64rem) 9vw, 67px"
-                        className="object-cover"
-                      />
+                      {link.label}
                     </span>
-                    <span className="block overflow-hidden pr-8">
-                      <span
-                        data-menu-link
-                        className="block text-display text-menu-link transition-colors duration-300 ease-power3 will-change-transform group-hover:text-black-graw group-focus-visible:text-black-graw"
-                      >
-                        {link.label}
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
+                  </span>
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
         <button

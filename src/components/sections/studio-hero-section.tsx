@@ -23,7 +23,7 @@ export function StudioHeroSection() {
   return (
     <section
       data-header-theme="light"
-      className="relative flex min-h-svh flex-col overflow-hidden bg-black-graw text-white lg:block lg:h-svh"
+      className="@container relative flex min-h-svh flex-col overflow-hidden bg-black-graw text-white lg:block lg:h-svh"
     >
       <DitherImage {...STUDIO_DITHER} animation="intro" />
 
@@ -124,12 +124,14 @@ export function StudioHeroSection() {
         </Link>
       </div>
 
+      {/* Scaled with the section (not the viewport) and its Figma side margin,
+          so the line fits the width that is really there. */}
       <SplitReveal
         as="h1"
         split="chars"
         trigger="load"
         delay={0.2}
-        className="relative mt-auto px-16 pt-48 pb-16 text-giant whitespace-nowrap lg:absolute lg:top-[71.13%] lg:left-50 lg:mt-0 lg:p-0"
+        className="relative mt-auto px-[calc(var(--fluid)*50)] pt-48 pb-16 text-giant whitespace-nowrap [--fluid:calc(100cqw/1920)] lg:absolute lg:top-[71.13%] lg:left-50 lg:mt-0 lg:p-0"
       >
         {STUDIO_PAGE.headline}
       </SplitReveal>
