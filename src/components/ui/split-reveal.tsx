@@ -3,6 +3,7 @@
 import { useRef, type ElementType, type ReactNode } from "react";
 import { EASE, gsap, SplitText, useGSAP } from "@/lib/gsap";
 import { cn } from "@/utils/cn";
+import { MASK_ROOM } from "@/utils/mask-room";
 
 type SplitRevealProps = {
   as?: ElementType;
@@ -48,14 +49,7 @@ export function SplitReveal({
             mask: "lines",
             autoSplit: true,
             onSplit: (self) => {
-              // Tight Figma line-heights: give masks room for ascenders and
-              // descenders without moving the lines.
-              gsap.set(self.masks, {
-                paddingTop: "0.12em",
-                paddingBottom: "0.18em",
-                marginTop: "-0.12em",
-                marginBottom: "-0.18em",
-              });
+              gsap.set(self.masks, MASK_ROOM);
               return gsap.from(self[split], {
                 yPercent: 110,
                 duration: split === "chars" ? 1.1 : 1,
